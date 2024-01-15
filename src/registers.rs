@@ -10,22 +10,24 @@ impl ProgramCounter {
     }
 }
 
-pub struct Registers([u16; 8]);
+const GENERAL_REGISTERS: usize = 8;
+
+pub struct Registers([u16; GENERAL_REGISTERS]);
 impl Default for Registers {
     fn default() -> Self {
-        Registers([0, 0, 0, 0, 0, 0, 0, 0])
+        Registers([0; GENERAL_REGISTERS])
     }
 }
 impl Registers {
     fn get(&self, register: u16) -> u16 {
-        if register > 7 {
+        if register >= GENERAL_REGISTERS as u16 {
             panic!("register address out of range");
         }
 
         self.0[register as usize]
     }
     fn set(&mut self, register: u16, value: u16) {
-        if register > 7 {
+        if register >= GENERAL_REGISTERS as u16 {
             panic!("register address out of range");
         }
 
