@@ -36,6 +36,11 @@ impl Registers {
 }
 
 pub struct Flags([bool; 3]);
+impl Default for Flags {
+    fn default() -> Self {
+        Flags([false; 3])
+    }
+}
 impl Flags {
     pub fn is_negative(&self) -> bool {
         self.0[0]

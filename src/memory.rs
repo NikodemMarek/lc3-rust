@@ -1,6 +1,6 @@
 const MEMORY_SIZE: usize = 65535;
 
-struct Memory([u16; MEMORY_SIZE]);
+pub struct Memory([u16; MEMORY_SIZE]);
 impl Default for Memory {
     fn default() -> Self {
         Memory([0; MEMORY_SIZE])
