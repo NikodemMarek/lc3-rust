@@ -1,11 +1,11 @@
 pub struct ProgramCounter(u16);
 impl Default for ProgramCounter {
     fn default() -> Self {
-        ProgramCounter(0)
+        ProgramCounter(0x3000)
     }
 }
 impl ProgramCounter {
-    fn get(&self) -> u16 {
+    pub fn get(&self) -> u16 {
         self.0
     }
 }
