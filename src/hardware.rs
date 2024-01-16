@@ -4,7 +4,7 @@ use crate::{
 };
 
 pub struct Hardware {
-    program_counter: ProgramCounter,
+    pub program_counter: ProgramCounter,
     registers: Registers,
     pub memory: Memory,
     flags: Flags,
@@ -22,6 +22,11 @@ impl Default for Hardware {
 impl Hardware {
     pub fn load(&mut self, program: &[u16]) {
         self.memory.load(self.program_counter.get(), program);
+    }
+
+    pub fn next(&mut self) -> u16 {
+        let address = self.program_counter.next();
+        self.memory.get(address)
     }
 }
 

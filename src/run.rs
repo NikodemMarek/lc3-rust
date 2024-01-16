@@ -3,11 +3,17 @@ use std::io::{self, Read};
 
 use crate::hardware::Hardware;
 
-pub fn run() {
+pub fn run(file_path: &str) {
     let mut hardware = Hardware::default();
 
-    let program = read_binary_file("test.obj").unwrap();
+    let program = read_binary_file(file_path).unwrap();
     hardware.load(&program);
+
+    while let instruction = hardware.next() {
+        if instruction != 0b0000_0000_0000_0000 {
+            println!("{:#06x}: {:#018b}", hardware.program_counter.get(), instruction);
+        }
+    }
 }
 
 fn read_binary_file(file_path: &str) -> io::Result<Vec<u16>> {

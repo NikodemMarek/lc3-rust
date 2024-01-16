@@ -8,6 +8,11 @@ impl ProgramCounter {
     pub fn get(&self) -> u16 {
         self.0
     }
+
+    pub fn next(&mut self) -> u16 {
+        self.0 += 1;
+        self.0 - 1
+    }
 }
 
 const GENERAL_REGISTERS: usize = 8;
