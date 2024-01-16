@@ -20,7 +20,7 @@ impl Memory {
             panic!("could not load, program too big")
         }
 
-        self.0[start..start + program.len()].copy_from_slice(&program);
+        self.0[start..start + program.len()].copy_from_slice(program);
     }
 }
 
