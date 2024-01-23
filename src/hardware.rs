@@ -32,6 +32,10 @@ impl Hardware {
         let address = self.program_counter.next();
         Some(self.memory.get(address))
     }
+
+    pub fn get_offset(&self, offset: u16) -> u16 {
+        self.memory.get(self.program_counter.get() + offset)
+    }
 }
 
 #[cfg(test)]

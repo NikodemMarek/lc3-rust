@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{self, Read};
 
 use crate::hardware::Hardware;
+use crate::memory;
 
 pub fn run(file_path: &str) {
     let mut hardware = Hardware::default();
@@ -48,7 +49,12 @@ fn process_instruction(instruction: u16, hardware: &mut Hardware) {
                 // JSR
             }
         }, // JSR / JSRR / RTI
-        0b0010_0000_0000_0000 => {}, // LD
+        0b0010_0000_0000_0000 => {
+            let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
+            let pcoffset9 = instruction & 0b0000_0001_1111_1111;
+
+            hardware.registers.set(dr, hardware.get_offset(pcoffset9));
+        }, // LD
         0b1010_0000_0000_0000 => {}, // LDI
         0b0110_0000_0000_0000 => {}, // LDR
         0b1110_0000_0000_0000 => {}, // LEA
@@ -92,5 +98,19 @@ mod tests {
         assert!(hardware.memory.get(0x3005) == 0b0110_1000_0100_0000);
         assert!(hardware.memory.get(0x3009) == 0b0000_1111_1111_1010);
         assert!(hardware.memory.get(0x300A) == 0b0000_0000_0000_0000);
+    }
+
+    #[test]
+    fn ld() {
+        let mut hardware = Hardware::default();
+        hardware.load(&[
+             0b0010_0010_0000_0001,
+             0b0000_0000_0000_0000,
+             0b0000_1111_1111_0000,
+        ]);
+
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
     }
 }
