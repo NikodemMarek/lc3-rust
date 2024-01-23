@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{self, Read};
+use std::ops::Shl;
 
 use crate::hardware::Hardware;
 use crate::memory;
@@ -19,6 +20,15 @@ fn main_loop(hardware: &mut Hardware) {
             println!("{:#06x}: {:#018b}", hardware.program_counter.get(), instruction);
             process_instruction(instruction, hardware);
         }
+    }
+}
+
+fn sign_extend_pcoffset9(value: u16) -> u16 {
+    let pcoffset9 = value & 0b0000_0001_1111_1111;
+    if pcoffset9 & 0b0000_0001_0000_0000 == 0b0000_0000_0000_0000 {
+        pcoffset9
+    } else {
+        pcoffset9 | 0b1111_1110_0000_0000
     }
 }
 
@@ -51,7 +61,7 @@ fn process_instruction(instruction: u16, hardware: &mut Hardware) {
         }, // JSR / JSRR / RTI
         0b0010_0000_0000_0000 => {
             let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
-            let pcoffset9 = instruction & 0b0000_0001_1111_1111;
+            let pcoffset9 = sign_extend_pcoffset9(instruction);
 
             hardware.registers.set(dr, hardware.get_offset(pcoffset9));
         }, // LD
@@ -98,6 +108,12 @@ mod tests {
         assert!(hardware.memory.get(0x3005) == 0b0110_1000_0100_0000);
         assert!(hardware.memory.get(0x3009) == 0b0000_1111_1111_1010);
         assert!(hardware.memory.get(0x300A) == 0b0000_0000_0000_0000);
+    }
+
+    #[test]
+    fn test_sign_extend_pcoffset9() {
+        assert!(sign_extend_pcoffset9(0b0000_0000_0000_0001) == 0b0000_0000_0000_0001);
+        assert!(sign_extend_pcoffset9(0b0000_0001_0000_0001) == 0b1111_1111_0000_0001);
     }
 
     #[test]
