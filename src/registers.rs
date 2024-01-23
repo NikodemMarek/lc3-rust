@@ -24,14 +24,14 @@ impl Default for Registers {
     }
 }
 impl Registers {
-    fn get(&self, register: u16) -> u16 {
+    pub fn get(&self, register: u16) -> u16 {
         if register >= GENERAL_REGISTERS as u16 {
             panic!("register address out of range");
         }
 
         self.0[register as usize]
     }
-    fn set(&mut self, register: u16, value: u16) {
+    pub fn set(&mut self, register: u16, value: u16) {
         if register >= GENERAL_REGISTERS as u16 {
             panic!("register address out of range");
         }

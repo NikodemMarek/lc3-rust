@@ -9,10 +9,14 @@ pub fn run(file_path: &str) {
     let program = read_binary_file(file_path).unwrap();
     hardware.load(&program);
 
-    while let instruction = hardware.next() {
+    main_loop(&mut hardware);
+}
+
+fn main_loop(hardware: &mut Hardware) {
+    while let Some(instruction) = hardware.next() {
         if instruction != 0b0000_0000_0000_0000 {
             println!("{:#06x}: {:#018b}", hardware.program_counter.get(), instruction);
-            process_instruction(instruction, &mut hardware);
+            process_instruction(instruction, hardware);
         }
     }
 }

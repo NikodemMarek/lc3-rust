@@ -1,4 +1,4 @@
-const MEMORY_SIZE: usize = 0xFFFF;
+pub const MEMORY_SIZE: usize = 0xFFFF;
 
 pub struct Memory([u16; MEMORY_SIZE]);
 impl Default for Memory {

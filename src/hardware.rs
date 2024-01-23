@@ -1,13 +1,13 @@
 use crate::{
-    memory::Memory,
+    memory::{Memory, self},
     registers::{Registers, Flags, ProgramCounter}
 };
 
 pub struct Hardware {
     pub program_counter: ProgramCounter,
-    registers: Registers,
+    pub registers: Registers,
     pub memory: Memory,
-    flags: Flags,
+    pub flags: Flags,
 }
 impl Default for Hardware {
     fn default() -> Self {
@@ -24,9 +24,13 @@ impl Hardware {
         self.memory.load(self.program_counter.get(), program);
     }
 
-    pub fn next(&mut self) -> u16 {
+    pub fn next(&mut self) -> Option<u16> {
+        if self.program_counter.get() >= memory::MEMORY_SIZE as u16 {
+            return None;
+        }
+
         let address = self.program_counter.next();
-        self.memory.get(address)
+        Some(self.memory.get(address))
     }
 }
 
