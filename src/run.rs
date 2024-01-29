@@ -64,12 +64,7 @@ fn process_instruction(instruction: u16, hardware: &mut Hardware) {
             let value = hardware.get_offset(pcoffset9);
 
             hardware.registers.set(dr, value);
-
-            match value as i16 {
-                ..=-1 => hardware.flags.set_negative(),
-                0 => hardware.flags.set_zero(),
-                0.. => hardware.flags.set_positive(),
-            };
+            hardware.flags.set(value);
         }, // LD
         0b1010_0000_0000_0000 => {}, // LDI
         0b0110_0000_0000_0000 => {}, // LDR

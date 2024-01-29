@@ -66,6 +66,14 @@ impl Flags {
     pub fn set_positive(&mut self) {
         self.0 = [false, false, true];
     }
+
+    pub fn set(&mut self, value: u16) {
+        match value as i16 {
+            ..=-1 => self.set_negative(),
+            0 => self.set_zero(),
+            0.. => self.set_positive(),
+        };
+    }
 }
 
 #[cfg(test)]
@@ -81,5 +89,19 @@ mod tests {
 
         assert!(registers.get(0b0000_0000_0000_0101) == 0b1000_1000_1000_1000);
         assert!(registers.get(0b0000_0000_0000_0000) == 0b0000_0000_1111_0000);
+    }
+
+    #[test]
+    fn set_flags() {
+        let mut flags = Flags::default();
+
+        flags.set(0b1111_0000_1111_0000);
+        assert!(flags.is_negative());
+
+        flags.set(0b0000_0000_0000_0000);
+        assert!(flags.is_zero());
+
+        flags.set(0b0000_1111_1111_0000);
+        assert!(flags.is_positive());
     }
 }
