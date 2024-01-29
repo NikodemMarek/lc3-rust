@@ -1,9 +1,7 @@
 use std::fs::File;
 use std::io::{self, Read};
-use std::ops::Shl;
 
 use crate::hardware::Hardware;
-use crate::memory;
 
 pub fn run(file_path: &str) {
     let mut hardware = Hardware::default();
@@ -63,7 +61,15 @@ fn process_instruction(instruction: u16, hardware: &mut Hardware) {
             let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
             let pcoffset9 = sign_extend_pcoffset9(instruction);
 
-            hardware.registers.set(dr, hardware.get_offset(pcoffset9));
+            let value = hardware.get_offset(pcoffset9);
+
+            hardware.registers.set(dr, value);
+
+            match value as i16 {
+                ..=-1 => hardware.flags.set_negative(),
+                0 => hardware.flags.set_zero(),
+                0.. => hardware.flags.set_positive(),
+            };
         }, // LD
         0b1010_0000_0000_0000 => {}, // LDI
         0b0110_0000_0000_0000 => {}, // LDR
@@ -124,9 +130,27 @@ mod tests {
              0b0000_0000_0000_0000,
              0b0000_1111_1111_0000,
         ]);
-
         main_loop(&mut hardware);
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
+        assert!(hardware.flags.is_positive());
+
+        let mut hardware = Hardware::default();
+        hardware.load(&[
+             0b0010_0010_0000_0000,
+             0b1111_0000_1111_0000,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.flags.is_negative());
+
+        let mut hardware = Hardware::default();
+        hardware.load(&[
+             0b0010_0010_0000_0000,
+             0b0000_0000_0000_0000,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.flags.is_zero());
     }
 }

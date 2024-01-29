@@ -56,6 +56,16 @@ impl Flags {
     pub fn is_positive(&self) -> bool {
         self.0[2]
     }
+
+    pub fn set_negative(&mut self) {
+        self.0 = [true, false, false];
+    }
+    pub fn set_zero(&mut self) {
+        self.0 = [false, true, false];
+    }
+    pub fn set_positive(&mut self) {
+        self.0 = [false, false, true];
+    }
 }
 
 #[cfg(test)]
