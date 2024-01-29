@@ -21,12 +21,20 @@ fn main_loop(hardware: &mut Hardware) {
     }
 }
 
-fn sign_extend_pcoffset9(value: u16) -> u16 {
+fn pcoffset9(value: u16) -> u16 {
     let pcoffset9 = value & 0b0000_0001_1111_1111;
     if pcoffset9 & 0b0000_0001_0000_0000 == 0b0000_0000_0000_0000 {
         pcoffset9
     } else {
         pcoffset9 | 0b1111_1110_0000_0000
+    }
+}
+fn pcoffset11(value: u16) -> u16 {
+    let pcoffset11 = value & 0b0000_0111_1111_1111;
+    if pcoffset11 & 0b0000_0100_0000_0000 == 0b0000_0000_0000_0000 {
+        pcoffset11
+    } else {
+        pcoffset11 | 0b1111_1000_0000_0000
     }
 }
 
@@ -59,7 +67,7 @@ fn process_instruction(instruction: u16, hardware: &mut Hardware) {
         }, // JSR / JSRR / RTI
         0b0010_0000_0000_0000 => {
             let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
-            let pcoffset9 = sign_extend_pcoffset9(instruction);
+            let pcoffset9 = pcoffset9(instruction);
 
             let value = hardware.get_offset(pcoffset9);
 
@@ -112,9 +120,14 @@ mod tests {
     }
 
     #[test]
-    fn test_sign_extend_pcoffset9() {
-        assert!(sign_extend_pcoffset9(0b0000_0000_0000_0001) == 0b0000_0000_0000_0001);
-        assert!(sign_extend_pcoffset9(0b0000_0001_0000_0001) == 0b1111_1111_0000_0001);
+    fn test_pcoffset9() {
+        assert!(pcoffset9(0b0000_0000_0000_0001) == 0b0000_0000_0000_0001);
+        assert!(pcoffset9(0b0000_0001_0000_0001) == 0b1111_1111_0000_0001);
+    }
+    #[test]
+    fn test_pcoffset11() {
+        assert!(pcoffset11(0b0000_0000_0000_0001) == 0b0000_0000_0000_0001);
+        assert!(pcoffset11(0b0000_0100_0000_0001) == 0b1111_1100_0000_0001);
     }
 
     #[test]
