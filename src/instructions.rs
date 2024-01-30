@@ -7,45 +7,33 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
             let sr1 = (instruction & 0b0000_0001_1100_0000) >> 6;
 
-            if instruction & 0b0000_0000_0010_0000 == 0b0000_0000_0000_0000 {
+            let value = hardware.registers.get(sr1) + if instruction & 0b0000_0000_0010_0000 == 0b0000_0000_0000_0000 {
                 // ADD 2 registers
                 let sr2 = instruction & 0b0000_0000_0000_0111;
-
-                let value = hardware.registers.get(sr1) + hardware.registers.get(sr2);
-
-                hardware.registers.set(dr, value);
-                hardware.flags.set(value);
+                hardware.registers.get(sr2)
             } else {
                 // ADD register and imm5
-                let imm5 = imm5(instruction);
+                imm5(instruction)
+            };
 
-                let value = hardware.registers.get(sr1) + imm5;
-
-                hardware.registers.set(dr, value);
-                hardware.flags.set(value);
-            }
+            hardware.registers.set(dr, value);
+            hardware.flags.set(value);
         }, // ADD
         0b0101_0000_0000_0000 => {
             let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
             let sr1 = (instruction & 0b0000_0001_1100_0000) >> 6;
 
-            if instruction & 0b0000_0000_0010_0000 == 0b0000_0000_0000_0000 {
+            let value = hardware.registers.get(sr1) & if instruction & 0b0000_0000_0010_0000 == 0b0000_0000_0000_0000 {
                 // AND 2 registers
                 let sr2 = instruction & 0b0000_0000_0000_0111;
-
-                let value = hardware.registers.get(sr1) & hardware.registers.get(sr2);
-
-                hardware.registers.set(dr, value);
-                hardware.flags.set(value);
+                hardware.registers.get(sr2)
             } else {
                 // AND register and imm5
-                let imm5 = imm5(instruction);
+                imm5(instruction)
+            };
 
-                let value = hardware.registers.get(sr1) & imm5;
-
-                hardware.registers.set(dr, value);
-                hardware.flags.set(value);
-            }
+            hardware.registers.set(dr, value);
+            hardware.flags.set(value);
         }, // AND
         0b0000_0000_0000_0000 => {}, // BR
         0b1100_0000_0000_0000 => {}, // JMP / RET
