@@ -58,7 +58,15 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
         }, // LDR
-        0b1110_0000_0000_0000 => {}, // LEA
+        0b1110_0000_0000_0000 => {
+            let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
+            let pcoffset9 = pcoffset9(instruction) as i16;
+
+            let value = (hardware.program_counter.get() as i16 + pcoffset9) as u16;
+
+            hardware.registers.set(dr, value);
+            hardware.flags.set(value);
+        }, // LEA
         0b1001_0000_0000_0000 => {}, // NOT
         0b0011_0000_0000_0000 => {}, // ST
         0b1011_0000_0000_0000 => {}, // STI
@@ -130,5 +138,17 @@ mod tests {
         main_loop(&mut hardware);
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
+    }
+
+    #[test]
+    fn lea() {
+        let mut hardware = Hardware::default();
+        hardware.load(&[
+             0b1110_0010_0000_1111,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 0b0011_0000_0001_0000);
+        assert!(hardware.flags.is_positive());
     }
 }
