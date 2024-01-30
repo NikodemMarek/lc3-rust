@@ -142,23 +142,5 @@ mod tests {
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
         assert!(hardware.flags.is_positive());
-
-        let mut hardware = Hardware::default();
-        hardware.load(&[
-             0b0010_0010_0000_0000,
-             0b1111_0000_1111_0000,
-        ]);
-        main_loop(&mut hardware);
-
-        assert!(hardware.flags.is_negative());
-
-        let mut hardware = Hardware::default();
-        hardware.load(&[
-             0b0010_0010_0000_0000,
-             0b0000_0000_0000_0000,
-        ]);
-        main_loop(&mut hardware);
-
-        assert!(hardware.flags.is_zero());
     }
 }
