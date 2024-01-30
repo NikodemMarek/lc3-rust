@@ -1,3 +1,12 @@
+pub fn imm5(value: u16) -> i16 {
+    let imm5 = value & 0b0000_0000_0011_1111;
+    if imm5 & 0b0000_0000_0001_0000 == 0b0000_0000_0000_0000 {
+        imm5 as i16
+    } else {
+        (imm5 | 0b1111_1111_1110_0000) as i16
+    }
+}
+
 pub fn offset6(value: u16) -> i16 {
     let offset6 = value & 0b0000_0000_0011_1111;
     if offset6 & 0b0000_0000_0010_0000 == 0b0000_0000_0000_0000 {
@@ -27,6 +36,12 @@ pub fn pcoffset11(value: u16) -> i16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_imm5() {
+        assert!(imm5(0b0000_0000_0000_0001) as u16 == 0b0000_0000_0000_0001);
+        assert!(imm5(0b0000_0000_0001_0001) as u16 == 0b1111_1111_1111_0001);
+    }
 
     #[test]
     fn test_offset6() {
