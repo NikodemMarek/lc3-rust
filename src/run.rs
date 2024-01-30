@@ -74,7 +74,15 @@ fn process_instruction(instruction: u16, hardware: &mut Hardware) {
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
         }, // LD
-        0b1010_0000_0000_0000 => {}, // LDI
+        0b1010_0000_0000_0000 => {
+            let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
+            let pcoffset9 = pcoffset9(instruction);
+
+            let value = hardware.memory.get(hardware.get_offset(pcoffset9));
+
+            hardware.registers.set(dr, value);
+            hardware.flags.set(value);
+        }, // LDI
         0b0110_0000_0000_0000 => {}, // LDR
         0b1110_0000_0000_0000 => {}, // LEA
         0b1001_0000_0000_0000 => {}, // NOT
@@ -135,6 +143,21 @@ mod tests {
         let mut hardware = Hardware::default();
         hardware.load(&[
              0b0010_0010_0000_0001,
+             0b0000_0000_0000_0000,
+             0b0000_1111_1111_0000,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
+        assert!(hardware.flags.is_positive());
+    }
+
+    #[test]
+    fn ldi() {
+        let mut hardware = Hardware::default();
+        hardware.load(&[
+             0b1010_0010_0000_0000,
+             0b0011_0000_0000_0011,
              0b0000_0000_0000_0000,
              0b0000_1111_1111_0000,
         ]);
