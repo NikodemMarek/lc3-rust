@@ -1,5 +1,5 @@
 use crate::hardware::Hardware;
-use crate::utils::{pcoffset9};
+use crate::utils::{pcoffset9, offset6};
 
 pub fn process(instruction: u16, hardware: &mut Hardware) {
     match instruction & 0b1111_0000_0000_0000 {
@@ -46,7 +46,18 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
         }, // LDI
-        0b0110_0000_0000_0000 => {}, // LDR
+        0b0110_0000_0000_0000 => {
+            let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
+            let baser = (instruction & 0b0000_0001_1100_0000) >> 6;
+            let offset6 = offset6(instruction) as i16;
+
+            let loc = (hardware.registers.get(baser) as i16 + offset6).try_into().unwrap();
+
+            let value = hardware.memory.get(loc);
+
+            hardware.registers.set(dr, value);
+            hardware.flags.set(value);
+        }, // LDR
         0b1110_0000_0000_0000 => {}, // LEA
         0b1001_0000_0000_0000 => {}, // NOT
         0b0011_0000_0000_0000 => {}, // ST
@@ -90,5 +101,34 @@ mod tests {
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
         assert!(hardware.flags.is_positive());
+    }
+
+    #[test]
+    fn ldr() {
+        let mut hardware = Hardware::default();
+        hardware.load(&[
+             0b0010_0100_0000_0001,
+             0b0110_0010_1000_0010,
+             0b0011_0000_0000_0010,
+             0b0000_0000_0000_0000,
+             0b0000_1111_1111_0000,
+        ]);
+        main_loop(&mut hardware);
+
+        println!("eeee {}", hardware.registers.get(2));
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
+        assert!(hardware.flags.is_positive());
+
+        let mut hardware = Hardware::default();
+        hardware.load(&[
+             0b0000_1111_1111_0000,
+             0b0000_0000_0000_0000,
+             0b0010_0100_0000_0001,
+             0b0110_0010_1011_1100,
+             0b0011_0000_0000_0100,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
     }
 }
