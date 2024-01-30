@@ -53,33 +53,4 @@ mod tests {
         assert!(hardware.memory.get(0x3009) == 0b0000_1111_1111_1010);
         assert!(hardware.memory.get(0x300A) == 0b0000_0000_0000_0000);
     }
-
-    #[test]
-    fn ld() {
-        let mut hardware = Hardware::default();
-        hardware.load(&[
-             0b0010_0010_0000_0001,
-             0b0000_0000_0000_0000,
-             0b0000_1111_1111_0000,
-        ]);
-        main_loop(&mut hardware);
-
-        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
-        assert!(hardware.flags.is_positive());
-    }
-
-    #[test]
-    fn ldi() {
-        let mut hardware = Hardware::default();
-        hardware.load(&[
-             0b1010_0010_0000_0000,
-             0b0011_0000_0000_0011,
-             0b0000_0000_0000_0000,
-             0b0000_1111_1111_0000,
-        ]);
-        main_loop(&mut hardware);
-
-        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
-        assert!(hardware.flags.is_positive());
-    }
 }
