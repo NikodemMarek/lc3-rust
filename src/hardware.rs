@@ -33,8 +33,8 @@ impl Hardware {
         Some(self.memory.get(address))
     }
 
-    pub fn get_offset(&self, offset: u16) -> u16 {
-        self.memory.get(self.program_counter.get() + offset)
+    pub fn get_offset(&self, offset: i16) -> u16 {
+        self.memory.get((self.program_counter.get() as i16 + offset).try_into().unwrap())
     }
 }
 
