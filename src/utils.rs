@@ -1,3 +1,12 @@
+pub fn offset6(value: u16) -> u16 {
+    let offset6 = value & 0b0000_0000_0011_1111;
+    if offset6 & 0b0000_0000_0010_0000 == 0b0000_0000_0000_0000 {
+        offset6
+    } else {
+        offset6 | 0b1111_1111_1100_0000
+    }
+}
+
 pub fn pcoffset9(value: u16) -> u16 {
     let pcoffset9 = value & 0b0000_0001_1111_1111;
     if pcoffset9 & 0b0000_0001_0000_0000 == 0b0000_0000_0000_0000 {
@@ -18,6 +27,12 @@ pub fn pcoffset11(value: u16) -> u16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_offset6() {
+        assert!(offset6(0b0000_0000_0000_0001) == 0b0000_0000_0000_0001);
+        assert!(offset6(0b0000_0000_0010_0001) == 0b1111_1111_1110_0001);
+    }
 
     #[test]
     fn test_pcoffset9() {
