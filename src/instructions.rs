@@ -1,13 +1,28 @@
 use crate::hardware::Hardware;
-use crate::utils::{pcoffset9, offset6};
+use crate::utils::{imm5, offset6, pcoffset9};
 
 pub fn process(instruction: u16, hardware: &mut Hardware) {
     match instruction & 0b1111_0000_0000_0000 {
         0b0001_0000_0000_0000 => {
+            let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
+            let sr1 = (instruction & 0b0000_0001_1100_0000) >> 6;
+
             if instruction & 0b0000_0000_0010_0000 == 0b0000_0000_0000_0000 {
                 // ADD 2 registers
+                let sr2 = instruction & 0b0000_0000_0000_0111;
+
+                let value = hardware.registers.get(sr1) + hardware.registers.get(sr2);
+
+                hardware.registers.set(dr, value);
+                hardware.flags.set(value);
             } else {
                 // ADD register and imm5
+                let imm5 = imm5(instruction);
+
+                let value = hardware.registers.get(sr1) + imm5;
+
+                hardware.registers.set(dr, value);
+                hardware.flags.set(value);
             }
         }, // ADD
         0b0101_0000_0000_0000 => {
@@ -81,6 +96,30 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
 mod tests {
     use super::*;
     use crate::run::main_loop;
+
+    #[test]
+    fn add() {
+        let mut hardware = Hardware::default();
+        hardware.registers.set(2, 15);
+        hardware.registers.set(3, 15);
+        hardware.load(&[
+             0b0001_0010_1000_0011u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 30);
+        assert!(hardware.flags.is_positive());
+
+        let mut hardware = Hardware::default();
+        hardware.registers.set(2, 10);
+        hardware.load(&[
+             0b0001_0010_1011_0001u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) as i16 == -5);
+        assert!(hardware.flags.is_negative());
+    }
 
     #[test]
     fn ld() {
