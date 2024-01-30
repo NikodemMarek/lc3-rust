@@ -41,7 +41,7 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
             let pcoffset9 = pcoffset9(instruction);
 
-            let value = hardware.memory.get(hardware.get_offset(pcoffset9));
+            let value = hardware.memory.get(hardware.get_offset(pcoffset9) as u16);
 
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
@@ -62,7 +62,7 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
             let pcoffset9 = pcoffset9(instruction) as i16;
 
-            let value = (hardware.program_counter.get() as i16 + pcoffset9) as u16;
+            let value = hardware.program_counter.get() as i16 + pcoffset9;
 
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
@@ -86,13 +86,13 @@ mod tests {
     fn ld() {
         let mut hardware = Hardware::default();
         hardware.load(&[
-             0b0010_0010_0000_0001,
-             0b0000_0000_0000_0000,
-             0b0000_1111_1111_0000,
+             0b0010_0010_0000_0001u16 as i16,
+             0b0000_0000_0000_0000u16 as i16,
+             0b0000_1111_1111_0000u16 as i16,
         ]);
         main_loop(&mut hardware);
 
-        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
     }
 
@@ -100,14 +100,14 @@ mod tests {
     fn ldi() {
         let mut hardware = Hardware::default();
         hardware.load(&[
-             0b1010_0010_0000_0000,
-             0b0011_0000_0000_0011,
-             0b0000_0000_0000_0000,
-             0b0000_1111_1111_0000,
+             0b1010_0010_0000_0000u16 as i16,
+             0b0011_0000_0000_0011u16 as i16,
+             0b0000_0000_0000_0000u16 as i16,
+             0b0000_1111_1111_0000u16 as i16,
         ]);
         main_loop(&mut hardware);
 
-        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
     }
 
@@ -115,40 +115,40 @@ mod tests {
     fn ldr() {
         let mut hardware = Hardware::default();
         hardware.load(&[
-             0b0010_0100_0000_0001,
-             0b0110_0010_1000_0010,
-             0b0011_0000_0000_0010,
-             0b0000_0000_0000_0000,
-             0b0000_1111_1111_0000,
+             0b0010_0100_0000_0001u16 as i16,
+             0b0110_0010_1000_0010u16 as i16,
+             0b0011_0000_0000_0010u16 as i16,
+             0b0000_0000_0000_0000u16 as i16,
+             0b0000_1111_1111_0000u16 as i16,
         ]);
         main_loop(&mut hardware);
 
         println!("eeee {}", hardware.registers.get(2));
-        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
 
         let mut hardware = Hardware::default();
         hardware.load(&[
-             0b0000_1111_1111_0000,
-             0b0000_0000_0000_0000,
-             0b0010_0100_0000_0001,
-             0b0110_0010_1011_1100,
-             0b0011_0000_0000_0100,
+             0b0000_1111_1111_0000u16 as i16,
+             0b0000_0000_0000_0000u16 as i16,
+             0b0010_0100_0000_0001u16 as i16,
+             0b0110_0010_1011_1100u16 as i16,
+             0b0011_0000_0000_0100u16 as i16,
         ]);
         main_loop(&mut hardware);
 
-        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000);
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
     }
 
     #[test]
     fn lea() {
         let mut hardware = Hardware::default();
         hardware.load(&[
-             0b1110_0010_0000_1111,
+             0b1110_0010_0000_1111u16 as i16,
         ]);
         main_loop(&mut hardware);
 
-        assert!(hardware.registers.get(1) == 0b0011_0000_0001_0000);
+        assert!(hardware.registers.get(1) == 0b0011_0000_0001_0000u16 as i16);
         assert!(hardware.flags.is_positive());
     }
 }

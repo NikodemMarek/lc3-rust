@@ -17,21 +17,21 @@ impl ProgramCounter {
 
 const GENERAL_REGISTERS: usize = 8;
 
-pub struct Registers([u16; GENERAL_REGISTERS]);
+pub struct Registers([i16; GENERAL_REGISTERS]);
 impl Default for Registers {
     fn default() -> Self {
         Registers([0; GENERAL_REGISTERS])
     }
 }
 impl Registers {
-    pub fn get(&self, register: u16) -> u16 {
+    pub fn get(&self, register: u16) -> i16 {
         if register >= GENERAL_REGISTERS as u16 {
             panic!("register address out of range");
         }
 
         self.0[register as usize]
     }
-    pub fn set(&mut self, register: u16, value: u16) {
+    pub fn set(&mut self, register: u16, value: i16) {
         if register >= GENERAL_REGISTERS as u16 {
             panic!("register address out of range");
         }
@@ -67,8 +67,8 @@ impl Flags {
         self.0 = [false, false, true];
     }
 
-    pub fn set(&mut self, value: u16) {
-        match value as i16 {
+    pub fn set(&mut self, value: i16) {
+        match value {
             ..=-1 => self.set_negative(),
             0 => self.set_zero(),
             0.. => self.set_positive(),
@@ -84,24 +84,24 @@ mod tests {
     fn write_to_registers() {
         let mut registers = Registers::default();
 
-        registers.set(0b0000_0000_0000_0000, 0b0000_0000_1111_0000);
-        registers.set(0b0000_0000_0000_0101, 0b1000_1000_1000_1000);
+        registers.set(0b0000_0000_0000_0000, 0b0000_0000_1111_0000u16 as i16);
+        registers.set(0b0000_0000_0000_0101, 0b1000_1000_1000_1000u16 as i16);
 
-        assert!(registers.get(0b0000_0000_0000_0101) == 0b1000_1000_1000_1000);
-        assert!(registers.get(0b0000_0000_0000_0000) == 0b0000_0000_1111_0000);
+        assert!(registers.get(0b0000_0000_0000_0101) == 0b1000_1000_1000_1000u16 as i16);
+        assert!(registers.get(0b0000_0000_0000_0000) == 0b0000_0000_1111_0000u16 as i16);
     }
 
     #[test]
     fn set_flags() {
         let mut flags = Flags::default();
 
-        flags.set(0b1111_0000_1111_0000);
+        flags.set(0b1111_0000_1111_0000u16 as i16);
         assert!(flags.is_negative());
 
-        flags.set(0b0000_0000_0000_0000);
+        flags.set(0b0000_0000_0000_0000u16 as i16);
         assert!(flags.is_zero());
 
-        flags.set(0b0000_1111_1111_0000);
+        flags.set(0b0000_1111_1111_0000u16 as i16);
         assert!(flags.is_positive());
     }
 }
