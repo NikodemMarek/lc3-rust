@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{self, Read};
 
 use crate::hardware::Hardware;
+use crate::instructions;
 
 pub fn run(file_path: &str) {
     let mut hardware = Hardware::default();
@@ -12,87 +13,13 @@ pub fn run(file_path: &str) {
     main_loop(&mut hardware);
 }
 
-fn main_loop(hardware: &mut Hardware) {
+pub fn main_loop(hardware: &mut Hardware) {
     while let Some(instruction) = hardware.next() {
         if instruction != 0b0000_0000_0000_0000 {
             println!("{:#06x}: {:#018b}", hardware.program_counter.get(), instruction);
-            process_instruction(instruction, hardware);
+            instructions::process(instruction, hardware);
         }
     }
-}
-
-fn pcoffset9(value: u16) -> u16 {
-    let pcoffset9 = value & 0b0000_0001_1111_1111;
-    if pcoffset9 & 0b0000_0001_0000_0000 == 0b0000_0000_0000_0000 {
-        pcoffset9
-    } else {
-        pcoffset9 | 0b1111_1110_0000_0000
-    }
-}
-fn pcoffset11(value: u16) -> u16 {
-    let pcoffset11 = value & 0b0000_0111_1111_1111;
-    if pcoffset11 & 0b0000_0100_0000_0000 == 0b0000_0000_0000_0000 {
-        pcoffset11
-    } else {
-        pcoffset11 | 0b1111_1000_0000_0000
-    }
-}
-
-fn process_instruction(instruction: u16, hardware: &mut Hardware) {
-    match instruction & 0b1111_0000_0000_0000 {
-        0b0001_0000_0000_0000 => {
-            if instruction & 0b0000_0000_0010_0000 == 0b0000_0000_0000_0000 {
-                // ADD 2 registers
-            } else {
-                // ADD register and imm5
-            }
-        }, // ADD
-        0b0101_0000_0000_0000 => {
-            if instruction & 0b0000_0000_0010_0000 == 0b0000_0000_0000_0000 {
-                // AND 2 registers
-            } else {
-                // AND register and imm5
-            }
-        }, // AND
-        0b0000_0000_0000_0000 => {}, // BR
-        0b1100_0000_0000_0000 => {}, // JMP / RET
-        0b1000_0000_0000_0000 => {
-            if instruction & 0b0000_1111_1111_1111 == 0b0000_0000_0000_0000 {
-                // RTI
-            } else if instruction & 0b0000_1000_0000_0000 == 0b0000_0000_0000_0000 {
-                // JSSR
-            } else {
-                // JSR
-            }
-        }, // JSR / JSRR / RTI
-        0b0010_0000_0000_0000 => {
-            let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
-            let pcoffset9 = pcoffset9(instruction);
-
-            let value = hardware.get_offset(pcoffset9);
-
-            hardware.registers.set(dr, value);
-            hardware.flags.set(value);
-        }, // LD
-        0b1010_0000_0000_0000 => {
-            let dr = (instruction & 0b0000_1110_0000_0000) >> 9;
-            let pcoffset9 = pcoffset9(instruction);
-
-            let value = hardware.memory.get(hardware.get_offset(pcoffset9));
-
-            hardware.registers.set(dr, value);
-            hardware.flags.set(value);
-        }, // LDI
-        0b0110_0000_0000_0000 => {}, // LDR
-        0b1110_0000_0000_0000 => {}, // LEA
-        0b1001_0000_0000_0000 => {}, // NOT
-        0b0011_0000_0000_0000 => {}, // ST
-        0b1011_0000_0000_0000 => {}, // STI
-        0b0111_0000_0000_0000 => {}, // STR
-        0b1111_0000_0000_0000 => {}, // TRAP
-        0b1101_0000_0000_0000 => {}, // reserved
-        _ => panic!("unrecognised instruction"),
-    };
 }
 
 fn read_binary_file(file_path: &str) -> io::Result<Vec<u16>> {
@@ -125,17 +52,6 @@ mod tests {
         assert!(hardware.memory.get(0x3005) == 0b0110_1000_0100_0000);
         assert!(hardware.memory.get(0x3009) == 0b0000_1111_1111_1010);
         assert!(hardware.memory.get(0x300A) == 0b0000_0000_0000_0000);
-    }
-
-    #[test]
-    fn test_pcoffset9() {
-        assert!(pcoffset9(0b0000_0000_0000_0001) == 0b0000_0000_0000_0001);
-        assert!(pcoffset9(0b0000_0001_0000_0001) == 0b1111_1111_0000_0001);
-    }
-    #[test]
-    fn test_pcoffset11() {
-        assert!(pcoffset11(0b0000_0000_0000_0001) == 0b0000_0000_0000_0001);
-        assert!(pcoffset11(0b0000_0100_0000_0001) == 0b1111_1100_0000_0001);
     }
 
     #[test]
