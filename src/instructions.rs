@@ -1,5 +1,5 @@
 use crate::hardware::Hardware;
-use crate::utils::{imm5, offset6, pcoffset9, register_at};
+use crate::utils::{imm5, offset6, pcoffset9, register_at, pcoffset11};
 
 pub fn process(instruction: u16, hardware: &mut Hardware) {
     match instruction & 0b1111_0000_0000_0000 {
@@ -51,15 +51,19 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             let baser = register_at(instruction, 6);
             hardware.program_counter.set(hardware.registers.get(baser) as u16);
         }, // JMP / RET
-        0b1000_0000_0000_0000 => {
-            if instruction & 0b0000_1111_1111_1111 == 0b0000_0000_0000_0000 {
-                // RTI
-            } else if instruction & 0b0000_1000_0000_0000 == 0b0000_0000_0000_0000 {
+        0b0100_0000_0000_0000 => {
+            hardware.registers.set(7, hardware.program_counter.get() as i16);
+
+            if instruction & 0b0000_1000_0000_0000 == 0b0000_0000_0000_0000 {
                 // JSSR
+                let baser = register_at(instruction, 6);
+                hardware.program_counter.set(hardware.registers.get(baser) as u16);
             } else {
                 // JSR
+                let pcoffset11 = pcoffset11(instruction);
+                hardware.program_counter.set((hardware.program_counter.get() as i16 + pcoffset11) as u16);
             }
-        }, // JSR / JSRR / RTI
+        }, // JSR / JSRR
         0b0010_0000_0000_0000 => {
             let dr = register_at(instruction, 9);
             let pcoffset9 = pcoffset9(instruction);
@@ -100,6 +104,7 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             hardware.flags.set(value);
         }, // LEA
         0b1001_0000_0000_0000 => {}, // NOT
+        0b1000_0000_0000_0000 => {}, // RTI
         0b0011_0000_0000_0000 => {}, // ST
         0b1011_0000_0000_0000 => {}, // STI
         0b0111_0000_0000_0000 => {}, // STR
@@ -227,6 +232,40 @@ mod tests {
         ]);
         main_loop(&mut hardware);
 
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
+    }
+
+    #[test]
+    fn jsr() {
+        // This tests works the same way as br.
+        let mut hardware = Hardware::default();
+        hardware.load(&[
+             0b0100_1000_0000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0010_0010_0000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0000_1111_1111_0000u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(7) == 0x3001);
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
+    }
+    #[test]
+    fn jsrr() {
+        // This tests works the same way as br.
+        let mut hardware = Hardware::default();
+        hardware.registers.set(2, 0x3002);
+        hardware.load(&[
+             0b0100_0000_1000_0000u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0010_0010_0000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0000_1111_1111_0000u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(7) == 0x3001);
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
     }
 
