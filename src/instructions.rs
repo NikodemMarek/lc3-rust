@@ -112,8 +112,17 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
         }, // NOT
-        0b1000_0000_0000_0000 => {}, // RTI
-        0b0011_0000_0000_0000 => {}, // ST
+        0b1000_0000_0000_0000 => {
+            // Unused in a vm.
+        }, // RTI
+        0b0011_0000_0000_0000 => {
+            let sr = register_at(instruction, 9);
+            let pcoffset9 = pcoffset9(instruction);
+
+            let loc = (hardware.program_counter.get() as i16 + pcoffset9).try_into().unwrap();
+
+            hardware.memory.set(loc, hardware.registers.get(sr));
+        }, // ST
         0b1011_0000_0000_0000 => {}, // STI
         0b0111_0000_0000_0000 => {}, // STR
         0b1111_0000_0000_0000 => {}, // TRAP
@@ -288,6 +297,19 @@ mod tests {
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
+    }
+
+    #[test]
+    fn st() {
+        let mut hardware = Hardware::default();
+        hardware.registers.set(2, 0b0000_1111_1111_0000u16 as i16);
+        hardware.load(&[
+             0b0011_0100_0000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.memory.get(0x3002) == 0b0000_1111_1111_0000u16 as i16);
     }
 
     #[test]
