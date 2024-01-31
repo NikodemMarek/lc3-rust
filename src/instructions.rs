@@ -123,7 +123,15 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
 
             hardware.memory.set(loc, hardware.registers.get(sr));
         }, // ST
-        0b1011_0000_0000_0000 => {}, // STI
+        0b1011_0000_0000_0000 => {
+            let sr = register_at(instruction, 9);
+            let pcoffset9 = pcoffset9(instruction);
+
+            let loc = (hardware.program_counter.get() as i16 + pcoffset9).try_into().unwrap();
+            let loc = hardware.memory.get(loc) as u16;
+
+            hardware.memory.set(loc, hardware.registers.get(sr));
+        }, // STI
         0b0111_0000_0000_0000 => {}, // STR
         0b1111_0000_0000_0000 => {}, // TRAP
         0b1101_0000_0000_0000 => {
@@ -310,6 +318,20 @@ mod tests {
         main_loop(&mut hardware);
 
         assert!(hardware.memory.get(0x3002) == 0b0000_1111_1111_0000u16 as i16);
+    }
+
+    #[test]
+    fn sti() {
+        let mut hardware = Hardware::default();
+        hardware.registers.set(2, 0b0000_1111_1111_0000u16 as i16);
+        hardware.load(&[
+             0b1011_0100_0000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0011_0000_1000_0000u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.memory.get(0x3080) == 0b0000_1111_1111_0000u16 as i16);
     }
 
     #[test]
