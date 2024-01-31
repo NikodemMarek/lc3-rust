@@ -35,7 +35,18 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
         }, // AND
-        0b0000_0000_0000_0000 => {}, // BR
+        0b0000_0000_0000_0000 => {
+            let n = (instruction & 0b0000_1000_0000_0000) == 0b0000_1000_0000_0000;
+            let z = (instruction & 0b0000_0100_0000_0000) == 0b0000_0100_0000_0000;
+            let p = (instruction & 0b0000_0010_0000_0000) == 0b0000_0010_0000_0000;
+
+            if n && hardware.flags.is_negative() || z && hardware.flags.is_zero() || p && hardware.flags.is_positive() || !n && !z && !p {
+                let pcoffset9 = pcoffset9(instruction);
+                let location = (hardware.program_counter.get() as i16 + pcoffset9).try_into().unwrap();
+
+                hardware.program_counter.set(location);
+            }
+        }, // BR
         0b1100_0000_0000_0000 => {}, // JMP / RET
         0b1000_0000_0000_0000 => {
             if instruction & 0b0000_1111_1111_1111 == 0b0000_0000_0000_0000 {
@@ -149,6 +160,38 @@ mod tests {
 
         assert!(hardware.registers.get(1) as i16 == 0b1111_1111_0000_0000u16 as i16);
         assert!(hardware.flags.is_negative());
+    }
+
+    #[test]
+    fn br() {
+        // This tests if br is behaving as expected by setting a value for register, that would
+        // otherwise be omitted.
+        let mut hardware = Hardware::default();
+        hardware.load(&[
+             0b0000_0000_0000_0010u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0000_0000_0000_0000u16 as i16,
+             0b0010_0010_0000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0000_1111_1111_0000u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
+
+        let mut hardware = Hardware::default();
+        hardware.flags.set_zero();
+        hardware.load(&[
+             0b0000_1100_0000_0010u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0000_0000_0000_0000u16 as i16,
+             0b0010_0010_0000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0000_1111_1111_0000u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
     }
 
     #[test]

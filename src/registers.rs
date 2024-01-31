@@ -13,6 +13,10 @@ impl ProgramCounter {
         self.0 += 1;
         self.0 - 1
     }
+
+    pub fn set(&mut self, value: u16) {
+        self.0 = value;
+    }
 }
 
 const GENERAL_REGISTERS: usize = 8;
