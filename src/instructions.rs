@@ -90,7 +90,10 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
         0b1011_0000_0000_0000 => {}, // STI
         0b0111_0000_0000_0000 => {}, // STR
         0b1111_0000_0000_0000 => {}, // TRAP
-        0b1101_0000_0000_0000 => {}, // reserved
+        0b1101_0000_0000_0000 => {
+            // This in not the defalt behaviour of the LC3, but it's useful for testing.
+            hardware.program_counter.set(crate::memory::MEMORY_SIZE as u16);
+        }, // reserved
         _ => panic!("unrecognised instruction"),
     };
 }
@@ -153,7 +156,7 @@ mod tests {
         let mut hardware = Hardware::default();
         hardware.load(&[
              0b0010_0010_0000_0001u16 as i16,
-             0b0000_0000_0000_0000u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
              0b0000_1111_1111_0000u16 as i16,
         ]);
         main_loop(&mut hardware);
@@ -168,7 +171,7 @@ mod tests {
         hardware.load(&[
              0b1010_0010_0000_0000u16 as i16,
              0b0011_0000_0000_0011u16 as i16,
-             0b0000_0000_0000_0000u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
              0b0000_1111_1111_0000u16 as i16,
         ]);
         main_loop(&mut hardware);
@@ -180,26 +183,22 @@ mod tests {
     #[test]
     fn ldr() {
         let mut hardware = Hardware::default();
+        hardware.registers.set(2, 0x3001);
         hardware.load(&[
-             0b0010_0100_0000_0001u16 as i16,
-             0b0110_0010_1000_0010u16 as i16,
-             0b0011_0000_0000_0010u16 as i16,
-             0b0000_0000_0000_0000u16 as i16,
+             0b0110_0010_1000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
              0b0000_1111_1111_0000u16 as i16,
         ]);
         main_loop(&mut hardware);
 
-        println!("eeee {}", hardware.registers.get(2));
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
 
         let mut hardware = Hardware::default();
+        hardware.registers.set(2, 0x3004);
         hardware.load(&[
              0b0000_1111_1111_0000u16 as i16,
-             0b0000_0000_0000_0000u16 as i16,
-             0b0010_0100_0000_0001u16 as i16,
              0b0110_0010_1011_1100u16 as i16,
-             0b0011_0000_0000_0100u16 as i16,
         ]);
         main_loop(&mut hardware);
 
