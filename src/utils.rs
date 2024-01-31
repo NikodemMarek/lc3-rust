@@ -33,6 +33,10 @@ pub fn pcoffset11(value: u16) -> i16 {
     }
 }
 
+pub fn register_at(value: u16, at: u16) -> u16 {
+    (value >> at) & 0b0000_0000_0000_0111
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -58,5 +62,10 @@ mod tests {
     fn test_pcoffset11() {
         assert!(pcoffset11(0b0000_0000_0000_0001) as u16 == 0b0000_0000_0000_0001);
         assert!(pcoffset11(0b0000_0100_0000_0001) as u16 == 0b1111_1100_0000_0001);
+    }
+
+    #[test]
+    fn test_register_at() {
+        assert!(register_at(0b0000_1010_0000_0000, 9) == 0b0000_0000_0000_0101);
     }
 }
