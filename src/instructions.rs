@@ -132,7 +132,15 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
 
             hardware.memory.set(loc, hardware.registers.get(sr));
         }, // STI
-        0b0111_0000_0000_0000 => {}, // STR
+        0b0111_0000_0000_0000 => {
+            let sr = register_at(instruction, 9);
+            let baser = register_at(instruction, 6);
+            let offset6 = offset6(instruction) as i16;
+
+            let loc = (hardware.registers.get(baser) as i16 + offset6).try_into().unwrap();
+
+            hardware.memory.set(loc, hardware.registers.get(sr));
+        }, // STR
         0b1111_0000_0000_0000 => {}, // TRAP
         0b1101_0000_0000_0000 => {
             // This in not the defalt behaviour of the LC3, but it's useful for testing.
@@ -328,6 +336,20 @@ mod tests {
              0b1011_0100_0000_0001u16 as i16,
              0b1101_0000_0000_0000u16 as i16, // exit
              0b0011_0000_1000_0000u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.memory.get(0x3080) == 0b0000_1111_1111_0000u16 as i16);
+    }
+
+    #[test]
+    fn str() {
+        let mut hardware = Hardware::default();
+        hardware.registers.set(2, 0b0000_1111_1111_0000u16 as i16);
+        hardware.registers.set(3, 0x307F);
+        hardware.load(&[
+             0b0111_0100_1100_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
         ]);
         main_loop(&mut hardware);
 
