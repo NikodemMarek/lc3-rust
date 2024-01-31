@@ -47,7 +47,10 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
                 hardware.program_counter.set(location);
             }
         }, // BR
-        0b1100_0000_0000_0000 => {}, // JMP / RET
+        0b1100_0000_0000_0000 => {
+            let baser = (instruction & 0b0000_0001_1100_0000) >> 6;
+            hardware.program_counter.set(hardware.registers.get(baser) as u16);
+        }, // JMP / RET
         0b1000_0000_0000_0000 => {
             if instruction & 0b0000_1111_1111_1111 == 0b0000_0000_0000_0000 {
                 // RTI
@@ -185,6 +188,39 @@ mod tests {
              0b0000_1100_0000_0010u16 as i16,
              0b1101_0000_0000_0000u16 as i16, // exit
              0b0000_0000_0000_0000u16 as i16,
+             0b0010_0010_0000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0000_1111_1111_0000u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
+    }
+
+    #[test]
+    fn jmp() {
+        // This tests works the same way as br.
+        let mut hardware = Hardware::default();
+        hardware.registers.set(2, 0x3002);
+        hardware.load(&[
+             0b1100_0000_1000_0000u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0010_0010_0000_0001u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
+             0b0000_1111_1111_0000u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
+    }
+    #[test]
+    fn ret() {
+        // This tests works the same way as br.
+        let mut hardware = Hardware::default();
+        hardware.registers.set(7, 0x3002);
+        hardware.load(&[
+             0b1100_0001_1100_0000u16 as i16,
+             0b1101_0000_0000_0000u16 as i16, // exit
              0b0010_0010_0000_0001u16 as i16,
              0b1101_0000_0000_0000u16 as i16, // exit
              0b0000_1111_1111_0000u16 as i16,
