@@ -103,7 +103,15 @@ pub fn process(instruction: u16, hardware: &mut Hardware) {
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
         }, // LEA
-        0b1001_0000_0000_0000 => {}, // NOT
+        0b1001_0000_0000_0000 => {
+            let dr = register_at(instruction, 9);
+            let sr = register_at(instruction, 6);
+
+            let value = !hardware.registers.get(sr);
+
+            hardware.registers.set(dr, value);
+            hardware.flags.set(value);
+        }, // NOT
         0b1000_0000_0000_0000 => {}, // RTI
         0b0011_0000_0000_0000 => {}, // ST
         0b1011_0000_0000_0000 => {}, // STI
@@ -267,6 +275,19 @@ mod tests {
 
         assert!(hardware.registers.get(7) == 0x3001);
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
+    }
+
+    #[test]
+    fn not() {
+        let mut hardware = Hardware::default();
+        hardware.registers.set(2, 0b1111_0000_0000_1111u16 as i16);
+        hardware.load(&[
+             0b1001_0010_1011_1111u16 as i16,
+        ]);
+        main_loop(&mut hardware);
+
+        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
+        assert!(hardware.flags.is_positive());
     }
 
     #[test]
