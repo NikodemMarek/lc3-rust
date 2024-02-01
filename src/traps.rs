@@ -9,7 +9,11 @@ pub fn process(instruction: u16, hardware: &mut Hardware, (input, output): &mut 
 
             hardware.registers.set(0, c as i16);
         }, // GETC
-        0b0000_0000_0010_0001 => {}, // OUT
+        0b0000_0000_0010_0001 => {
+            let c = hardware.registers.get(0);
+
+            output.write_all(&[c as u8]).unwrap();
+        }, // OUT
         0b0000_0000_0010_0010 => {
             let string_loc: u16 = hardware.registers.get(0).try_into().unwrap();
             let mut offset: u16 = 0;
@@ -41,6 +45,15 @@ mod tests {
         process(0b0000_0000_0010_0000, &mut hardware, &mut io);
 
         assert_eq!(hardware.registers.get(0), 'H' as i16);
+    }
+
+    #[test]
+    fn out() {
+        let (mut hardware, mut io) = setup_default_test();
+        hardware.registers.set(0, 'H' as i16);
+        process(0b0000_0000_0010_0001, &mut hardware, &mut io);
+
+        assert_eq!(io.1, b"H");
     }
 
     #[test]
