@@ -28,7 +28,14 @@ pub fn process(instruction: u16, hardware: &mut Hardware, (input, output): &mut 
                 offset += 1;
             }
         }, // PUTS
-        0b0000_0000_0010_0011 => {}, // IN
+        0b0000_0000_0010_0011 => {
+            let c = input.bytes().next().unwrap().unwrap();
+
+            hardware.registers.set(0, c as i16);
+            hardware.flags.set(c as i16);
+
+            output.write_all(&[c as u8]).unwrap();
+        }, // IN
         0b0000_0000_0010_0100 => {}, // PUTSP
         0b0000_0000_0010_0101 => {}, // HALT
         i @ _  => println!("unknown trap code: {:#010b}", i),
@@ -71,5 +78,15 @@ mod tests {
         process(0b0000_0000_0010_0010, &mut hardware, &mut io);
 
         assert_eq!(io.1, b"Hello World!");
+    }
+
+    #[test]
+    fn _in() {
+        let (mut hardware, mut io) = setup_test_with_input("Hello World!");
+        process(0b0000_0000_0010_0011, &mut hardware, &mut io);
+
+        assert_eq!(hardware.registers.get(0), 'H' as i16);
+        assert_eq!(hardware.flags.is_positive(), true);
+        assert_eq!(io.1, b"H");
     }
 }
