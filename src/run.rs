@@ -1,23 +1,23 @@
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 
 use crate::hardware::Hardware;
 use crate::instructions;
 
-pub fn run(file_path: &str) {
+pub fn run(file_path: &str, output: &mut impl Write) {
     let mut hardware = Hardware::default();
 
     let program = read_binary_file(file_path).unwrap();
     hardware.load(&program);
 
-    main_loop(&mut hardware);
+    main_loop(&mut hardware, output);
 }
 
-pub fn main_loop(hardware: &mut Hardware) {
+pub fn main_loop(hardware: &mut Hardware, output: &mut impl Write) {
     while let Some(instruction) = hardware.next() {
         if instruction != 0b0000_0000_0000_0000 {
             println!("{:#06x}: {:#018b}", hardware.program_counter.get(), instruction);
-            instructions::process(instruction, hardware);
+            instructions::process(instruction, hardware, output);
         }
     }
 }

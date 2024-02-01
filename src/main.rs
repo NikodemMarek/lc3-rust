@@ -6,5 +6,5 @@ mod instructions;
 mod utils;
 
 fn main() {
-    run::run("test.obj");
+    run::run("test.obj", &mut std::io::stdout());
 }
