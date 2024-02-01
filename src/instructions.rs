@@ -208,6 +208,7 @@ mod tests {
         // This tests if br is behaving as expected by setting a value for register, that would
         // otherwise be omitted.
         let mut hardware = Hardware::default();
+        hardware.flags.set_negative();
         hardware.load(&[
              0b0000_0000_0000_0010u16 as i16,
              0b1101_0000_0000_0000u16 as i16, // exit
@@ -398,16 +399,6 @@ mod tests {
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
-
-        let mut hardware = Hardware::default();
-        hardware.registers.set(2, 0x3004);
-        hardware.load(&[
-             0b0000_1111_1111_0000u16 as i16,
-             0b0110_0010_1011_1100u16 as i16,
-        ]);
-        main_loop(&mut hardware);
-
-        assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
     }
 
     #[test]

@@ -47,7 +47,7 @@ impl Registers {
 pub struct Flags([bool; 3]);
 impl Default for Flags {
     fn default() -> Self {
-        Flags([false; 3])
+        Flags([false, true, false])
     }
 }
 impl Flags {
