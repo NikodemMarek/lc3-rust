@@ -8,6 +8,7 @@ pub fn process(instruction: u16, hardware: &mut Hardware, (input, output): &mut 
             let c = input.bytes().next().unwrap().unwrap();
 
             hardware.registers.set(0, c as i16);
+            hardware.flags.set(c as i16);
         }, // GETC
         0b0000_0000_0010_0001 => {
             let c = hardware.registers.get(0);
@@ -45,6 +46,7 @@ mod tests {
         process(0b0000_0000_0010_0000, &mut hardware, &mut io);
 
         assert_eq!(hardware.registers.get(0), 'H' as i16);
+        assert_eq!(hardware.flags.is_positive(), true);
     }
 
     #[test]
