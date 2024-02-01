@@ -24,7 +24,9 @@ pub fn process(instruction: u16, hardware: &mut Hardware, (input, output): &mut 
                 if c == 0 {
                     break;
                 }
+
                 output.write_all(&[c as u8]).unwrap();
+
                 offset += 1;
             }
         }, // PUTS
@@ -36,7 +38,28 @@ pub fn process(instruction: u16, hardware: &mut Hardware, (input, output): &mut 
 
             output.write_all(&[c as u8]).unwrap();
         }, // IN
-        0b0000_0000_0010_0100 => {}, // PUTSP
+        0b0000_0000_0010_0100 => {
+            // FIXME: This probably does not work as intended.
+            let string_loc: u16 = hardware.registers.get(0).try_into().unwrap();
+            let mut offset: u16 = 0;
+
+            loop {
+                let c = hardware.memory.get(string_loc + offset);
+                if c == 0 {
+                    break;
+                }
+
+                let c1: u8 = (c & 0xFF) as u8;
+                output.write_all(&[c1]).unwrap();
+
+                let c2: u8 = (c >> 8) as u8;
+                if c2 != 0 {
+                    output.write_all(&[c2]).unwrap();
+                }
+
+                offset += 1;
+            }
+        }, // PUTSP
         0b0000_0000_0010_0101 => {}, // HALT
         i @ _  => println!("unknown trap code: {:#010b}", i),
     };
@@ -88,5 +111,19 @@ mod tests {
         assert_eq!(hardware.registers.get(0), 'H' as i16);
         assert_eq!(hardware.flags.is_positive(), true);
         assert_eq!(io.1, b"H");
+    }
+
+    #[test]
+    fn putsp() {
+        let (mut hardware, mut io) = setup_default_test();
+        hardware.registers.set(0, 0x3100);
+        hardware.memory.load(0x3100, &[
+            'H' as i16, 'e' as i16, 'l' as i16, 'l' as i16, 'o' as i16, ' ' as i16,
+            'W' as i16, 'o' as i16, 'r' as i16, 'l' as i16, 'd' as i16, '!' as i16,
+            0x0000,
+        ]);
+        process(0b0000_0000_0010_0100, &mut hardware, &mut io);
+
+        assert_eq!(io.1, b"Hello World!");
     }
 }
