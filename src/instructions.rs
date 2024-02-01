@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use crate::hardware::Hardware;
+use crate::traps;
 use crate::utils::{imm5, offset6, pcoffset9, register_at, pcoffset11};
 
 pub fn process(instruction: u16, hardware: &mut Hardware, output: &mut impl Write) {
@@ -143,7 +144,7 @@ pub fn process(instruction: u16, hardware: &mut Hardware, output: &mut impl Writ
 
             hardware.memory.set(loc, hardware.registers.get(sr));
         }, // STR
-        0b1111_0000_0000_0000 => {}, // TRAP
+        0b1111_0000_0000_0000 => traps::process(instruction, hardware, output), // TRAP
         0b1101_0000_0000_0000 => {
             // This in not the defalt behaviour of the LC3, but it's useful for testing.
             hardware.program_counter.set(crate::memory::MEMORY_SIZE as u16);
@@ -155,7 +156,6 @@ pub fn process(instruction: u16, hardware: &mut Hardware, output: &mut impl Writ
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::run::main_loop;
 
     fn setup() -> (Hardware, Vec<u8>) {
         (Hardware::default(), Vec::new())
