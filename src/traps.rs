@@ -60,7 +60,9 @@ pub fn process(instruction: u16, hardware: &mut Hardware, (input, output): &mut 
                 offset += 1;
             }
         }, // PUTSP
-        0b0000_0000_0010_0101 => {}, // HALT
+        0b0000_0000_0010_0101 => {
+            std::process::exit(1);
+        }, // HALT
         i @ _  => println!("unknown trap code: {:#010b}", i),
     };
 }

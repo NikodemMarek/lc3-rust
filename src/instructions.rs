@@ -145,10 +145,7 @@ pub fn process(instruction: u16, hardware: &mut Hardware, io: &mut (impl Read, i
             hardware.memory.set(loc, hardware.registers.get(sr));
         }, // STR
         0b1111_0000_0000_0000 => traps::process(instruction, hardware, io), // TRAP
-        0b1101_0000_0000_0000 => {
-            // This in not the defalt behaviour of the LC3, but it's useful for testing.
-            hardware.program_counter.set(crate::memory::MEMORY_SIZE as u16);
-        }, // reserved
+        0b1101_0000_0000_0000 => {}, // reserved
         _ => panic!("unrecognised instruction"),
     };
 }
