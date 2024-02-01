@@ -69,3 +69,10 @@ mod tests {
         assert!(register_at(0b0000_1010_0000_0000, 9) == 0b0000_0000_0000_0101);
     }
 }
+
+pub fn setup_default_test() -> (crate::hardware::Hardware, (&'static [u8], Vec<u8>)) {
+    (crate::hardware::Hardware::default(), ("".as_bytes(), Vec::new()))
+}
+pub fn setup_test_with_input(input: &'static str) -> (crate::hardware::Hardware, (&'static [u8], Vec<u8>)) {
+    (crate::hardware::Hardware::default(), (&input.as_bytes(), Vec::new()))
+}

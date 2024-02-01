@@ -7,5 +7,8 @@ mod utils;
 mod traps;
 
 fn main() {
-    run::run("test.obj", &mut std::io::stdout());
+    run::run(
+        "test.obj",
+        &mut (std::io::stdin(), std::io::stdout())
+    );
 }

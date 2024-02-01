@@ -1,10 +1,14 @@
-use std::io::Write;
+use std::io::{Write, Read};
 
 use crate::hardware::Hardware;
 
-pub fn process(instruction: u16, hardware: &mut Hardware, output: &mut impl Write) {
+pub fn process(instruction: u16, hardware: &mut Hardware, (input, output): &mut (impl Read, impl Write)) {
     match instruction & 0b0000_0000_1111_1111 {
-        0b0000_0000_0010_0000 => {}, // GETC
+        0b0000_0000_0010_0000 => {
+            let c = input.bytes().next().unwrap().unwrap();
+
+            hardware.registers.set(0, c as i16);
+        }, // GETC
         0b0000_0000_0010_0001 => {}, // OUT
         0b0000_0000_0010_0010 => {
             let string_loc: u16 = hardware.registers.get(0).try_into().unwrap();
@@ -29,10 +33,19 @@ pub fn process(instruction: u16, hardware: &mut Hardware, output: &mut impl Writ
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::{setup_default_test, setup_test_with_input};
+
+    #[test]
+    fn getc() {
+        let (mut hardware, mut io) = setup_test_with_input("Hello World!");
+        process(0b0000_0000_0010_0000, &mut hardware, &mut io);
+
+        assert_eq!(hardware.registers.get(0), 'H' as i16);
+    }
 
     #[test]
     fn puts() {
-        let mut hardware = Hardware::default();
+        let (mut hardware, mut io) = setup_default_test();
         hardware.registers.set(0, 0x3100);
         hardware.memory.load(0x3100, &[
             'H' as i16, 'e' as i16, 'l' as i16, 'l' as i16, 'o' as i16, ' ' as i16,
@@ -40,9 +53,8 @@ mod tests {
             0x0000,
         ]);
 
-        let mut out: Vec<u8> = Vec::new();
-        process(0b0000_0000_0010_0010, &mut hardware, &mut out);
+        process(0b0000_0000_0010_0010, &mut hardware, &mut io);
 
-        assert_eq!(&out, b"Hello World!");
+        assert_eq!(io.1, b"Hello World!");
     }
 }
