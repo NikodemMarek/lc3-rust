@@ -21,7 +21,8 @@ impl Default for Hardware {
 }
 impl Hardware {
     pub fn load(&mut self, program: &[i16]) {
-        self.memory.load(self.program_counter.get(), program);
+        self.program_counter.set(program[0].try_into().unwrap());
+        self.memory.load(self.program_counter.get(), &program[1..]);
     }
 
     pub fn next(&mut self) -> Option<u16> {
@@ -47,6 +48,7 @@ mod tests {
         let mut hardware = Hardware::default();
 
         hardware.load(&[
+            0x3000,
             0b1110_0010_1111_1111u16 as i16,
             0b0101_0110_1110_0000u16 as i16,
             0b0101_0100_1010_0000u16 as i16,
