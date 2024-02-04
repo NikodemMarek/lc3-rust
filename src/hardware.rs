@@ -3,6 +3,11 @@ use crate::{
     registers::{Registers, Flags, ProgramCounter}
 };
 
+enum MemoryMappedRegisters {
+    KBSR = 0xFE00,
+    KBDR = 0xFE02,
+}
+
 pub struct Hardware<R, W> {
     pub program_counter: ProgramCounter,
     pub registers: Registers,
@@ -22,7 +27,7 @@ impl Default for Hardware<std::io::Stdin, std::io::Stdout> {
         }
     }
 }
-impl<R, W> Hardware<R, W> {
+impl<R: std::io::Read, W> Hardware<R, W> {
     #[allow(dead_code)]
     pub fn default_with_io(io: (R, W)) -> Self {
         Hardware {
@@ -48,10 +53,26 @@ impl<R, W> Hardware<R, W> {
         Some(self.memory.get(address) as u16)
     }
 
-    pub fn get_memory(&self, address: u16) -> i16 {
+    fn handle_keyboard(&mut self) {
+        let mut buf = [0; 1];
+        self.io.0.read(&mut buf).unwrap();
+        let c = buf[0];
+        if c == 0 {
+            self.memory.set(MemoryMappedRegisters::KBSR as u16, 0);
+        } else {
+            self.memory.set(MemoryMappedRegisters::KBDR as u16, c as i16);
+            self.memory.set(MemoryMappedRegisters::KBSR as u16, 1 << 15);
+        }
+    }
+
+    pub fn get_memory(&mut self, address: u16) -> i16 {
+        if address == MemoryMappedRegisters::KBSR as u16 {
+            self.handle_keyboard();
+        }
+
         self.memory.get(address)
     }
-    pub fn get_memory_with_offset(&self, offset: i16) -> i16 {
+    pub fn get_memory_with_offset(&mut self, offset: i16) -> i16 {
         self.get_memory((self.program_counter.get() as i16 + offset).try_into().unwrap())
     }
 }

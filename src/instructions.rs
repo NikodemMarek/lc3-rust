@@ -80,7 +80,8 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
             let dr = register_at(instruction, 9);
             let pcoffset9 = pcoffset9(instruction);
 
-            let value = hardware.get_memory(hardware.get_memory_with_offset(pcoffset9) as u16);
+            let loc = hardware.get_memory_with_offset(pcoffset9) as u16;
+            let value = hardware.get_memory(loc);
 
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
