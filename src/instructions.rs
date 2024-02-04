@@ -146,7 +146,7 @@ pub fn process(instruction: u16, hardware: &mut Hardware, io: &mut (impl Read, i
         }, // STR
         0b1111_0000_0000_0000 => traps::process(instruction, hardware, io), // TRAP
         0b1101_0000_0000_0000 => {}, // reserved
-        _ => panic!("unrecognised instruction"),
+        i @ _  => panic!("unknown instruction: {:#06b}", i >> 12),
     };
 }
 
