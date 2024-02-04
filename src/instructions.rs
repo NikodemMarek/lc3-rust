@@ -4,7 +4,7 @@ use crate::hardware::Hardware;
 use crate::traps;
 use crate::utils::{imm5, offset6, pcoffset9, register_at, pcoffset11};
 
-pub fn process(instruction: u16, hardware: &mut Hardware, io: &mut (impl Read, impl Write)) {
+pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W>) {
     match instruction & 0b1111_0000_0000_0000 {
         0b0001_0000_0000_0000 => {
             let dr = register_at(instruction, 9);
@@ -144,7 +144,7 @@ pub fn process(instruction: u16, hardware: &mut Hardware, io: &mut (impl Read, i
 
             hardware.memory.set(loc, hardware.registers.get(sr));
         }, // STR
-        0b1111_0000_0000_0000 => traps::process(instruction, hardware, io), // TRAP
+        0b1111_0000_0000_0000 => traps::process(instruction, hardware), // TRAP
         0b1101_0000_0000_0000 => {}, // reserved
         i @ _  => panic!("unknown instruction: {:#06b}", i >> 12),
     };
@@ -157,17 +157,17 @@ mod tests {
 
     #[test]
     fn add() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 15);
         hardware.registers.set(3, 15);
-        process(0b0001_0010_1000_0011u16, &mut hardware, &mut io);
+        process(0b0001_0010_1000_0011u16, &mut hardware);
 
         assert!(hardware.registers.get(1) == 30);
         assert!(hardware.flags.is_positive());
 
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 10);
-        process(0b0001_0010_1011_0001u16, &mut hardware, &mut io);
+        process(0b0001_0010_1011_0001u16, &mut hardware);
 
         assert!(hardware.registers.get(1) as i16 == -5);
         assert!(hardware.flags.is_negative());
@@ -175,17 +175,17 @@ mod tests {
 
     #[test]
     fn and() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 0b0000_1100_1111_0000u16 as i16);
         hardware.registers.set(3, 0b0000_1111_0011_0000u16 as i16);
-        process(0b0101_0010_1000_0011u16, &mut hardware, &mut io);
+        process(0b0101_0010_1000_0011u16, &mut hardware);
 
         assert!(hardware.registers.get(1) == 0b0000_1100_0011_0000u16 as i16);
         assert!(hardware.flags.is_positive());
 
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 0b1111_1111_0000_0000u16 as i16);
-        process(0b0101_0010_1011_0001u16, &mut hardware, &mut io);
+        process(0b0101_0010_1011_0001u16, &mut hardware);
 
         assert!(hardware.registers.get(1) as i16 == 0b1111_1111_0000_0000u16 as i16);
         assert!(hardware.flags.is_negative());
@@ -193,54 +193,54 @@ mod tests {
 
     #[test]
     fn br() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.flags.set_negative();
-        process(0b0000_0000_0000_0010u16, &mut hardware, &mut io);
+        process(0b0000_0000_0000_0010u16, &mut hardware);
 
         assert!(hardware.program_counter.get() == 0x3002);
 
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.flags.set_zero();
-        process(0b0000_1100_0000_0010u16, &mut hardware, &mut io);
+        process(0b0000_1100_0000_0010u16, &mut hardware);
 
         assert!(hardware.program_counter.get() == 0x3002);
 
-        let (mut hardware, mut io) = setup_default_test();
-        process(0b0000_0010_0000_0010u16, &mut hardware, &mut io);
+        let mut hardware = setup_default_test();
+        process(0b0000_0010_0000_0010u16, &mut hardware);
 
         assert!(hardware.program_counter.get() == 0x3000);
     }
 
     #[test]
     fn jmp() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 0x3002);
-        process(0b1100_0000_1000_0000u16, &mut hardware, &mut io);
+        process(0b1100_0000_1000_0000u16, &mut hardware);
 
         assert!(hardware.program_counter.get() == 0x3002);
     }
     #[test]
     fn ret() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(7, 0x3002);
-        process(0b1100_0001_1100_0000u16, &mut hardware, &mut io);
+        process(0b1100_0001_1100_0000u16, &mut hardware);
 
         assert!(hardware.program_counter.get() == 0x3002);
     }
 
     #[test]
     fn jsr() {
-        let (mut hardware, mut io) = setup_default_test();
-        process(0b0100_1000_0000_0010u16, &mut hardware, &mut io);
+        let mut hardware = setup_default_test();
+        process(0b0100_1000_0000_0010u16, &mut hardware);
 
         assert!(hardware.program_counter.get() == 0x3002);
         assert!(hardware.registers.get(7) == 0x3000);
     }
     #[test]
     fn jsrr() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 0x3002);
-        process(0b0100_0000_1000_0000u16, &mut hardware, &mut io);
+        process(0b0100_0000_1000_0000u16, &mut hardware);
 
         assert!(hardware.program_counter.get() == 0x3002);
         assert!(hardware.registers.get(7) == 0x3000);
@@ -248,9 +248,9 @@ mod tests {
 
     #[test]
     fn not() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 0b1111_0000_0000_1111u16 as i16);
-        process(0b1001_0010_1011_1111u16, &mut hardware, &mut io);
+        process(0b1001_0010_1011_1111u16, &mut hardware);
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
@@ -258,38 +258,38 @@ mod tests {
 
     #[test]
     fn st() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 0b0000_1111_1111_0000u16 as i16);
-        process(0b0011_0100_0000_0010u16, &mut hardware, &mut io);
+        process(0b0011_0100_0000_0010u16, &mut hardware);
 
         assert!(hardware.memory.get(0x3002) == 0b0000_1111_1111_0000u16 as i16);
     }
 
     #[test]
     fn sti() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 0b0000_1111_1111_0000u16 as i16);
         hardware.memory.set(0x3002, 0b0011_0000_1000_0000u16 as i16);
-        process(0b1011_0100_0000_0010u16, &mut hardware, &mut io);
+        process(0b1011_0100_0000_0010u16, &mut hardware);
 
         assert!(hardware.memory.get(0x3080) == 0b0000_1111_1111_0000u16 as i16);
     }
 
     #[test]
     fn str() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 0b0000_1111_1111_0000u16 as i16);
         hardware.registers.set(3, 0x307F);
-        process(0b0111_0100_1100_0001u16, &mut hardware, &mut io);
+        process(0b0111_0100_1100_0001u16, &mut hardware);
 
         assert!(hardware.memory.get(0x3080) == 0b0000_1111_1111_0000u16 as i16);
     }
 
     #[test]
     fn ld() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.memory.set(0x3002, 0b0000_1111_1111_0000u16 as i16);
-        process(0b0010_0010_0000_0010u16, &mut hardware, &mut io);
+        process(0b0010_0010_0000_0010u16, &mut hardware);
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
@@ -297,10 +297,10 @@ mod tests {
 
     #[test]
     fn ldi() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.memory.set(0x3000, 0b0011_0000_0000_0010u16 as i16);
         hardware.memory.set(0x3002, 0b0000_1111_1111_0000u16 as i16);
-        process(0b1010_0010_0000_0000u16, &mut hardware, &mut io);
+        process(0b1010_0010_0000_0000u16, &mut hardware);
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
@@ -308,10 +308,10 @@ mod tests {
 
     #[test]
     fn ldr() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(2, 0x3001);
         hardware.memory.set(0x3002, 0b0000_1111_1111_0000u16 as i16);
-        process(0b0110_0010_1000_0001u16, &mut hardware, &mut io);
+        process(0b0110_0010_1000_0001u16, &mut hardware);
 
         assert!(hardware.registers.get(1) == 0b0000_1111_1111_0000u16 as i16);
         assert!(hardware.flags.is_positive());
@@ -319,8 +319,8 @@ mod tests {
 
     #[test]
     fn lea() {
-        let (mut hardware, mut io) = setup_default_test();
-        process(0b1110_0010_0000_1111u16, &mut hardware, &mut io);
+        let mut hardware = setup_default_test();
+        process(0b1110_0010_0000_1111u16, &mut hardware);
 
         assert!(hardware.registers.get(1) == 0b0011_0000_0000_1111u16 as i16);
         assert!(hardware.flags.is_positive());

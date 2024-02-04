@@ -70,9 +70,11 @@ mod tests {
     }
 }
 
-pub fn setup_default_test() -> (crate::hardware::Hardware, (&'static [u8], Vec<u8>)) {
-    (crate::hardware::Hardware::default(), ("".as_bytes(), Vec::new()))
+#[allow(dead_code)]
+pub fn setup_default_test() -> crate::hardware::Hardware<&'static [u8], Vec<u8>> {
+    crate::hardware::Hardware::default_with_io(("".as_bytes(), Vec::new()))
 }
-pub fn setup_test_with_input(input: &'static str) -> (crate::hardware::Hardware, (&'static [u8], Vec<u8>)) {
-    (crate::hardware::Hardware::default(), (&input.as_bytes(), Vec::new()))
+#[allow(dead_code)]
+pub fn setup_test_with_input(input: &'static str) -> crate::hardware::Hardware<&'static [u8], Vec<u8>> {
+    crate::hardware::Hardware::default_with_io((&input.as_bytes(), Vec::new()))
 }

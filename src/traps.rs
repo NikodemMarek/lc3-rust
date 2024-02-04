@@ -2,7 +2,9 @@ use std::io::{Write, Read};
 
 use crate::hardware::Hardware;
 
-pub fn process(instruction: u16, hardware: &mut Hardware, (input, output): &mut (impl Read, impl Write)) {
+pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W>) {
+    let (input, output) = &mut hardware.io;
+
     match instruction & 0b0000_0000_1111_1111 {
         0b0000_0000_0010_0000 => {
             let c = input.bytes().next().unwrap().unwrap();
@@ -78,8 +80,8 @@ mod tests {
 
     #[test]
     fn getc() {
-        let (mut hardware, mut io) = setup_test_with_input("Hello World!");
-        process(0b0000_0000_0010_0000, &mut hardware, &mut io);
+        let mut hardware = setup_test_with_input("Hello World!");
+        process(0b0000_0000_0010_0000, &mut hardware);
 
         assert_eq!(hardware.registers.get(0), 'H' as i16);
         assert_eq!(hardware.flags.is_positive(), true);
@@ -87,16 +89,16 @@ mod tests {
 
     #[test]
     fn out() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(0, 'H' as i16);
-        process(0b0000_0000_0010_0001, &mut hardware, &mut io);
+        process(0b0000_0000_0010_0001, &mut hardware);
 
-        assert_eq!(io.1, b"H");
+        assert_eq!(hardware.io.1, b"H");
     }
 
     #[test]
     fn puts() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(0, 0x3100);
         hardware.memory.load(0x3100, &[
             'H' as i16, 'e' as i16, 'l' as i16, 'l' as i16, 'o' as i16, ' ' as i16,
@@ -104,15 +106,15 @@ mod tests {
             0x0000,
         ]);
 
-        process(0b0000_0000_0010_0010, &mut hardware, &mut io);
+        process(0b0000_0000_0010_0010, &mut hardware);
 
-        assert_eq!(io.1, b"Hello World!");
+        assert_eq!(hardware.io.1, b"Hello World!");
     }
 
     #[test]
     fn _in() {
-        let (mut hardware, mut io) = setup_test_with_input("Hello World!");
-        process(0b0000_0000_0010_0011, &mut hardware, &mut io);
+        let mut hardware = setup_test_with_input("Hello World!");
+        process(0b0000_0000_0010_0011, &mut hardware);
 
         assert_eq!(hardware.registers.get(0), 'H' as i16);
         assert_eq!(hardware.flags.is_positive(), true);
@@ -120,15 +122,15 @@ mod tests {
 
     #[test]
     fn putsp() {
-        let (mut hardware, mut io) = setup_default_test();
+        let mut hardware = setup_default_test();
         hardware.registers.set(0, 0x3100);
         hardware.memory.load(0x3100, &[
             'H' as i16, 'e' as i16, 'l' as i16, 'l' as i16, 'o' as i16, ' ' as i16,
             'W' as i16, 'o' as i16, 'r' as i16, 'l' as i16, 'd' as i16, '!' as i16,
             0x0000,
         ]);
-        process(0b0000_0000_0010_0100, &mut hardware, &mut io);
+        process(0b0000_0000_0010_0100, &mut hardware);
 
-        assert_eq!(io.1, b"Hello World!");
+        assert_eq!(hardware.io.1, b"Hello World!");
     }
 }

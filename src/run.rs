@@ -4,20 +4,17 @@ use std::io::{self, Read, Write};
 use crate::hardware::Hardware;
 use crate::instructions;
 
-pub fn run(file_path: &str, io: &mut (impl Read, impl Write)) {
-    let mut hardware = Hardware::default();
-
+pub fn run<R: Read, W: Write>(file_path: &str, hardware: &mut Hardware<R, W>) {
     let program = read_binary_file(file_path).unwrap();
     hardware.load(&program);
 
-    main_loop(&mut hardware, io);
+    main_loop(hardware);
 }
 
-pub fn main_loop(hardware: &mut Hardware, io: &mut (impl Read, impl Write)) {
+pub fn main_loop<R: Read, W: Write>(hardware: &mut Hardware<R, W>) {
     while let Some(instruction) = hardware.next() {
         if instruction != 0b0000_0000_0000_0000 {
-            println!("{:#06x}: {:#018b}", hardware.program_counter.get(), instruction);
-            instructions::process(instruction, hardware, io);
+            instructions::process(instruction, hardware);
         }
     }
 }

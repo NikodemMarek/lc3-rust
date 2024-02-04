@@ -7,8 +7,6 @@ mod utils;
 mod traps;
 
 fn main() {
-    run::run(
-        "test.obj",
-        &mut (std::io::stdin(), std::io::stdout())
-    );
+    let mut hardware = hardware::Hardware::default();
+    run::run("2048.obj", &mut hardware);
 }

@@ -3,23 +3,37 @@ use crate::{
     registers::{Registers, Flags, ProgramCounter}
 };
 
-pub struct Hardware {
+pub struct Hardware<R, W> {
     pub program_counter: ProgramCounter,
     pub registers: Registers,
     pub memory: Memory,
     pub flags: Flags,
+
+    pub io: (R, W),
 }
-impl Default for Hardware {
+impl Default for Hardware<std::io::Stdin, std::io::Stdout> {
     fn default() -> Self {
         Hardware {
             program_counter: ProgramCounter::default(),
             registers: Registers::default(),
             memory: Memory::default(),
             flags: Flags::default(),
+            io: (std::io::stdin(), std::io::stdout()),
         }
     }
 }
-impl Hardware {
+impl<R, W> Hardware<R, W> {
+    #[allow(dead_code)]
+    pub fn default_with_io(io: (R, W)) -> Self {
+        Hardware {
+            program_counter: ProgramCounter::default(),
+            registers: Registers::default(),
+            memory: Memory::default(),
+            flags: Flags::default(),
+            io,
+        }
+    }
+
     pub fn load(&mut self, program: &[i16]) {
         self.program_counter.set(program[0].try_into().unwrap());
         self.memory.load(self.program_counter.get(), &program[1..]);
