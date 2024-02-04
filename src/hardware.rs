@@ -79,6 +79,8 @@ impl<R: std::io::Read, W> Hardware<R, W> {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils;
+
     use super::*;
 
     #[test]
@@ -103,5 +105,14 @@ mod tests {
         assert!(hardware.memory.get(0x3005) == 0b0110_1000_0100_0000u16 as i16);
         assert!(hardware.memory.get(0x3009) == 0b0000_1111_1111_1010u16 as i16);
         assert!(hardware.memory.get(0x300A) == 0b0000_0000_0000_0000u16 as i16);
+    }
+
+    #[test]
+    fn handle_keyboard() {
+        let mut hardware = utils::setup_test_with_input("H");
+        hardware.handle_keyboard();
+
+        assert_eq!(hardware.memory.get(MemoryMappedRegisters::KBDR as u16), 'H' as i16);
+        assert_eq!(hardware.memory.get(MemoryMappedRegisters::KBSR as u16), 1 << 15);
     }
 }
