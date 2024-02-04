@@ -48,8 +48,11 @@ impl<R, W> Hardware<R, W> {
         Some(self.memory.get(address) as u16)
     }
 
-    pub fn get_offset(&self, offset: i16) -> i16 {
-        self.memory.get((self.program_counter.get() as i16 + offset).try_into().unwrap())
+    pub fn get_memory(&self, address: u16) -> i16 {
+        self.memory.get(address)
+    }
+    pub fn get_memory_with_offset(&self, offset: i16) -> i16 {
+        self.get_memory((self.program_counter.get() as i16 + offset).try_into().unwrap())
     }
 }
 

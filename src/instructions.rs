@@ -71,7 +71,7 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
             let dr = register_at(instruction, 9);
             let pcoffset9 = pcoffset9(instruction);
 
-            let value = hardware.get_offset(pcoffset9);
+            let value = hardware.get_memory_with_offset(pcoffset9);
 
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
@@ -80,7 +80,7 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
             let dr = register_at(instruction, 9);
             let pcoffset9 = pcoffset9(instruction);
 
-            let value = hardware.memory.get(hardware.get_offset(pcoffset9) as u16);
+            let value = hardware.get_memory(hardware.get_memory_with_offset(pcoffset9) as u16);
 
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
@@ -92,7 +92,7 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
 
             let loc = (hardware.registers.get(baser) as i16 + offset6).try_into().unwrap();
 
-            let value = hardware.memory.get(loc);
+            let value = hardware.get_memory(loc);
 
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
@@ -131,7 +131,7 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
             let pcoffset9 = pcoffset9(instruction);
 
             let loc = (hardware.program_counter.get() as i16 + pcoffset9).try_into().unwrap();
-            let loc = hardware.memory.get(loc) as u16;
+            let loc = hardware.get_memory(loc) as u16;
 
             hardware.memory.set(loc, hardware.registers.get(sr));
         }, // STI
