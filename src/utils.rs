@@ -6,7 +6,7 @@ pub fn sign_extend(mut value: u16, bit_count: u8) -> u16 {
 }
 
 pub fn imm5(value: u16) -> u16 {
-    sign_extend(value & 0b0000_0000_0011_1111, 5)
+    sign_extend(value & 0b0000_0000_0001_1111, 5)
 }
 
 pub fn offset6(value: u16) -> u16 {

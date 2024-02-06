@@ -3,70 +3,71 @@ use std::io::{Write, Read};
 use crate::hardware::Hardware;
 
 pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W>) {
-    let (input, output) = &mut hardware.io;
+    match instruction & 0xFF {
+        0x20 => {
+            let mut buf = [0; 1];
+            hardware.io.0.read_exact(&mut buf).unwrap();
+            let c = buf[0] as u16;
 
-    match instruction & 0b0000_0000_1111_1111 {
-        0b0000_0000_0010_0000 => {
-            let c = input.bytes().next().unwrap().unwrap();
-
-            hardware.registers.set(0, c as u16);
-            hardware.flags.set(c as u16);
+            hardware.registers.set(0, c);
+            hardware.flags.set(c);
         }, // GETC
-        0b0000_0000_0010_0001 => {
+        0x21 => {
             let c = hardware.registers.get(0) as u8;
 
-            output.write_all(&[c]).unwrap();
+            hardware.io.1.write_all(&[c]).unwrap();
         }, // OUT
-        0b0000_0000_0010_0010 => {
-            let string_loc: u16 = hardware.registers.get(0).try_into().unwrap();
-            let mut offset: u16 = 0;
+        0x22 => {
+            let string_loc = hardware.registers.get(0) as u16;
+            let mut offset = 0;
 
             loop {
-                let c = hardware.memory.get(string_loc + offset);
+                let c = hardware.get_memory(string_loc + offset);
                 if c == 0 {
                     break;
                 }
 
-                output.write_all(&[c as u8]).unwrap();
+                hardware.io.1.write_all(&[c as u8]).unwrap();
 
                 offset += 1;
             }
 
-            output.flush().unwrap();
+            hardware.io.1.flush().unwrap();
         }, // PUTS
-        0b0000_0000_0010_0011 => {
-            output.flush().unwrap();
+        0x23 => {
+            hardware.io.1.flush().unwrap();
 
-            let c = input.bytes().next().unwrap().unwrap();
+            let mut buf = [0; 1];
+            hardware.io.0.read_exact(&mut buf).unwrap();
+            let c = buf[0];
 
             hardware.registers.set(0, c as u16);
             hardware.flags.set(c as u16);
         }, // IN
-        0b0000_0000_0010_0100 => {
-            // FIXME: This probably does not work as intended.
-            let string_loc: u16 = hardware.registers.get(0).try_into().unwrap();
-            let mut offset: u16 = 0;
+        0x24 => {
+            let string_loc = hardware.registers.get(0) as u16;
+            let mut offset = 0;
 
             loop {
-                let c = hardware.memory.get(string_loc + offset);
+                let c = hardware.get_memory(string_loc + offset);
                 if c == 0 {
                     break;
                 }
 
                 let c1: u8 = (c & 0xFF) as u8;
-                output.write_all(&[c1]).unwrap();
+                hardware.io.1.write_all(&[c1]).unwrap();
 
                 let c2: u8 = (c >> 8) as u8;
                 if c2 != 0 {
-                    output.write_all(&[c2]).unwrap();
+                    hardware.io.1.write_all(&[c2]).unwrap();
                 }
 
                 offset += 1;
             }
 
-            output.flush().unwrap();
+            hardware.io.1.flush().unwrap();
         }, // PUTSP
-        0b0000_0000_0010_0101 => {
+        0x25 => {
             std::process::exit(1);
         }, // HALT
         i @ _  => panic!("unknown trap code: {:#010b}", i),

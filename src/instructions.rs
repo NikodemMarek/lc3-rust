@@ -5,8 +5,20 @@ use crate::traps;
 use crate::utils::{imm5, offset6, pcoffset9, register_at, pcoffset11};
 
 pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W>) {
-    match instruction & 0b1111_0000_0000_0000 {
-        0b0001_0000_0000_0000 => {
+    match instruction >> 12 {
+        0x0 => {
+            let n = (instruction & 0b0000_1000_0000_0000) == 0b0000_1000_0000_0000;
+            let z = (instruction & 0b0000_0100_0000_0000) == 0b0000_0100_0000_0000;
+            let p = (instruction & 0b0000_0010_0000_0000) == 0b0000_0010_0000_0000;
+
+            if n && hardware.flags.is_negative() || z && hardware.flags.is_zero() || p && hardware.flags.is_positive() {
+                let pcoffset9 = pcoffset9(instruction);
+                let loc = hardware.program_counter.get() as u32 + pcoffset9 as u32;
+
+                hardware.program_counter.set(loc as u16);
+            }
+        }, // BR
+        0x1 => {
             let dr = register_at(instruction, 9);
             let sr1 = register_at(instruction, 6);
 
@@ -22,7 +34,41 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
             hardware.registers.set(dr, value as u16);
             hardware.flags.set(value as u16);
         }, // ADD
-        0b0101_0000_0000_0000 => {
+        0x2 => {
+            let dr = register_at(instruction, 9);
+            let pcoffset9 = pcoffset9(instruction);
+
+            let loc = hardware.program_counter.get() as u32 + pcoffset9 as u32;
+            let value = hardware.get_memory(loc as u16);
+
+            hardware.registers.set(dr, value);
+            hardware.flags.set(value);
+        }, // LD
+        0x3 => {
+            let sr = register_at(instruction, 9);
+            let pcoffset9 = pcoffset9(instruction);
+
+            let loc = hardware.program_counter.get() as u32 + pcoffset9 as u32;
+
+            hardware.memory.set(loc as u16, hardware.registers.get(sr));
+        }, // ST
+        0x4 => {
+            hardware.registers.set(7, hardware.program_counter.get());
+
+            let loc = if instruction & 0b0000_1000_0000_0000 == 0b0000_0000_0000_0000 {
+                // JSSR
+                let baser = register_at(instruction, 6);
+                hardware.registers.get(baser)
+            } else {
+                // JSR
+                let pcoffset11 = pcoffset11(instruction);
+                let loc = hardware.program_counter.get() as u32 + pcoffset11 as u32;
+                loc as u16
+            };
+
+            hardware.program_counter.set(loc);
+        }, // JSR / JSRR
+        0x5 => {
             let dr = register_at(instruction, 9);
             let sr1 = register_at(instruction, 6);
 
@@ -38,75 +84,31 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
         }, // AND
-        0b0000_0000_0000_0000 => {
-            let n = (instruction & 0b0000_1000_0000_0000) == 0b0000_1000_0000_0000;
-            let z = (instruction & 0b0000_0100_0000_0000) == 0b0000_0100_0000_0000;
-            let p = (instruction & 0b0000_0010_0000_0000) == 0b0000_0010_0000_0000;
-
-            if n && hardware.flags.is_negative() || z && hardware.flags.is_zero() || p && hardware.flags.is_positive() {
-                let pcoffset9 = pcoffset9(instruction);
-                let loc = hardware.program_counter.get() as u32 + pcoffset9 as u32;
-
-                hardware.program_counter.set(loc as u16);
-            }
-        }, // BR
-        0b1100_0000_0000_0000 => {
-            let baser = register_at(instruction, 6);
-            hardware.program_counter.set(hardware.registers.get(baser));
-        }, // JMP / RET
-        0b0100_0000_0000_0000 => {
-            hardware.registers.set(7, hardware.program_counter.get());
-
-            if instruction & 0b0000_1000_0000_0000 == 0b0000_0000_0000_0000 {
-                // JSSR
-                let baser = register_at(instruction, 6);
-                hardware.program_counter.set(hardware.registers.get(baser));
-            } else {
-                // JSR
-                let pcoffset11 = pcoffset11(instruction);
-                hardware.program_counter.set((hardware.program_counter.get() as u32 + pcoffset11 as u32) as u16);
-            }
-        }, // JSR / JSRR
-        0b0010_0000_0000_0000 => {
-            let dr = register_at(instruction, 9);
-            let pcoffset9 = pcoffset9(instruction);
-
-            let value = hardware.get_memory_with_offset(pcoffset9);
-
-            hardware.registers.set(dr, value);
-            hardware.flags.set(value);
-        }, // LD
-        0b1010_0000_0000_0000 => {
-            let dr = register_at(instruction, 9);
-            let pcoffset9 = pcoffset9(instruction);
-
-            let loc = hardware.get_memory_with_offset(pcoffset9) as u16;
-            let value = hardware.get_memory(loc);
-
-            hardware.registers.set(dr, value);
-            hardware.flags.set(value);
-        }, // LDI
-        0b0110_0000_0000_0000 => {
+        0x6 => {
             let dr = register_at(instruction, 9);
             let baser = register_at(instruction, 6);
             let offset6 = offset6(instruction);
 
             let loc = hardware.registers.get(baser) as u32 + offset6 as u32;
-            let value = hardware.get_memory(loc as u16);
+            let value = hardware.get_memory(loc as u16).clone();
 
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
         }, // LDR
-        0b1110_0000_0000_0000 => {
-            let dr = register_at(instruction, 9);
-            let pcoffset9 = pcoffset9(instruction);
+        0x7 => {
+            let sr = register_at(instruction, 9);
+            let baser = register_at(instruction, 6);
+            let offset6 = offset6(instruction);
 
-            let value = hardware.program_counter.get() as u32 + pcoffset9 as u32;
+            let loc = hardware.registers.get(baser) as u32 + offset6 as u32;
+            let value = hardware.registers.get(sr);
 
-            hardware.registers.set(dr, value as u16);
-            hardware.flags.set(value as u16);
-        }, // LEA
-        0b1001_0000_0000_0000 => {
+            hardware.memory.set(loc as u16, value);
+        }, // STR
+        0x8 => {
+            // Unused in a vm.
+        }, // RTI
+        0x9 => {
             let dr = register_at(instruction, 9);
             let sr = register_at(instruction, 6);
 
@@ -115,38 +117,45 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
             hardware.registers.set(dr, value);
             hardware.flags.set(value);
         }, // NOT
-        0b1000_0000_0000_0000 => {
-            // Unused in a vm.
-        }, // RTI
-        0b0011_0000_0000_0000 => {
-            let sr = register_at(instruction, 9);
+        0xA => {
+            let dr = register_at(instruction, 9);
             let pcoffset9 = pcoffset9(instruction);
 
             let loc = hardware.program_counter.get() as u32 + pcoffset9 as u32;
+            let loc = hardware.get_memory(loc as u16);
+            let value = hardware.get_memory(loc);
 
-            hardware.memory.set(loc as u16, hardware.registers.get(sr));
-        }, // ST
-        0b1011_0000_0000_0000 => {
+            hardware.registers.set(dr, value);
+            hardware.flags.set(value);
+        }, // LDI
+        0xB => {
             let sr = register_at(instruction, 9);
             let pcoffset9 = pcoffset9(instruction);
 
             let loc = hardware.program_counter.get() as u32 + pcoffset9 as u32;
             let loc = hardware.get_memory(loc as u16);
 
-            hardware.memory.set(loc, hardware.registers.get(sr));
+            let value = hardware.registers.get(sr);
+
+            hardware.memory.set(loc, value);
         }, // STI
-        0b0111_0000_0000_0000 => {
-            let sr = register_at(instruction, 9);
+        0xC => {
             let baser = register_at(instruction, 6);
-            let offset6 = offset6(instruction);
 
-            let loc = hardware.registers.get(baser) as u32 + offset6 as u32;
+            hardware.program_counter.set(hardware.registers.get(baser));
+        }, // JMP / RET
+        0xD => {}, // reserved
+        0xE => {
+            let dr = register_at(instruction, 9);
+            let pcoffset9 = pcoffset9(instruction);
 
-            hardware.memory.set(loc as u16, hardware.registers.get(sr));
-        }, // STR
-        0b1111_0000_0000_0000 => traps::process(instruction, hardware), // TRAP
-        0b1101_0000_0000_0000 => {}, // reserved
-        i @ _  => panic!("unknown instruction: {:#06b}", i >> 12),
+            let value = hardware.program_counter.get() as u32 + pcoffset9 as u32;
+
+            hardware.registers.set(dr, value as u16);
+            hardware.flags.set(value as u16);
+        }, // LEA
+        0xF => traps::process(instruction, hardware), // TRAP
+        i @ _  => panic!("unknown instruction: {:#06b}", i),
     };
 }
 
@@ -193,12 +202,6 @@ mod tests {
 
     #[test]
     fn br() {
-        let mut hardware = setup_default_test();
-        hardware.flags.set_negative();
-        process(0b0000_0000_0000_0010, &mut hardware);
-
-        assert_eq!(hardware.program_counter.get(), 0x3002);
-
         let mut hardware = setup_default_test();
         hardware.flags.set_zero();
         process(0b0000_1100_0000_0010, &mut hardware);

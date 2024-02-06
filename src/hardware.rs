@@ -56,11 +56,11 @@ impl<R: std::io::Read, W> Hardware<R, W> {
     fn handle_keyboard(&mut self) {
         let mut buf = [0; 1];
         self.io.0.read_exact(&mut buf).unwrap();
-        let c = buf[0];
+        let c = buf[0] as u16;
         if c == 0 {
             self.memory.set(MemoryMappedRegisters::KBSR as u16, 0);
         } else {
-            self.memory.set(MemoryMappedRegisters::KBDR as u16, c as u16);
+            self.memory.set(MemoryMappedRegisters::KBDR as u16, c);
             self.memory.set(MemoryMappedRegisters::KBSR as u16, 1 << 15);
         }
     }
@@ -71,9 +71,6 @@ impl<R: std::io::Read, W> Hardware<R, W> {
         }
 
         self.memory.get(address)
-    }
-    pub fn get_memory_with_offset(&mut self, offset: u16) -> u16 {
-        self.get_memory((self.program_counter.get() as u32 + offset as u32) as u16)
     }
 }
 
