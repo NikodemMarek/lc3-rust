@@ -6,9 +6,16 @@ mod instructions;
 mod utils;
 mod traps;
 
+use std::path::Path;
+
 use termios::*;
 
 fn main() {
+    let file_path = std::env::args().nth(1).expect("missing file path");
+    if !Path::new(&file_path).exists() {
+        panic!("file does not exist");
+    }
+
     let stdin = 0;
     let termios = termios::Termios::from_fd(stdin).unwrap();
 
@@ -19,7 +26,7 @@ fn main() {
     tcsetattr(stdin, TCSANOW, &mut new_termios).unwrap();
 
     let mut hardware = hardware::Hardware::default();
-    run::run("rogue.obj", &mut hardware);
+    run::run(&file_path, &mut hardware);
 
     tcsetattr(stdin, TCSANOW, &termios).unwrap();
 }
