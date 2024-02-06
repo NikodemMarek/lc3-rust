@@ -9,13 +9,13 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
         0b0000_0000_0010_0000 => {
             let c = input.bytes().next().unwrap().unwrap();
 
-            hardware.registers.set(0, c as i16);
-            hardware.flags.set(c as i16);
+            hardware.registers.set(0, c as u16);
+            hardware.flags.set(c as u16);
         }, // GETC
         0b0000_0000_0010_0001 => {
-            let c = hardware.registers.get(0);
+            let c = hardware.registers.get(0) as u8;
 
-            output.write_all(&[c as u8]).unwrap();
+            output.write_all(&[c]).unwrap();
         }, // OUT
         0b0000_0000_0010_0010 => {
             let string_loc: u16 = hardware.registers.get(0).try_into().unwrap();
@@ -39,8 +39,8 @@ pub fn process<R: Read, W: Write>(instruction: u16, hardware: &mut Hardware<R, W
 
             let c = input.bytes().next().unwrap().unwrap();
 
-            hardware.registers.set(0, c as i16);
-            hardware.flags.set(c as i16);
+            hardware.registers.set(0, c as u16);
+            hardware.flags.set(c as u16);
         }, // IN
         0b0000_0000_0010_0100 => {
             // FIXME: This probably does not work as intended.
@@ -83,14 +83,14 @@ mod tests {
         let mut hardware = setup_test_with_input("Hello World!");
         process(0b0000_0000_0010_0000, &mut hardware);
 
-        assert_eq!(hardware.registers.get(0), 'H' as i16);
+        assert_eq!(hardware.registers.get(0), 'H' as u16);
         assert_eq!(hardware.flags.is_positive(), true);
     }
 
     #[test]
     fn out() {
         let mut hardware = setup_default_test();
-        hardware.registers.set(0, 'H' as i16);
+        hardware.registers.set(0, 'H' as u16);
         process(0b0000_0000_0010_0001, &mut hardware);
 
         assert_eq!(hardware.io.1, b"H");
@@ -101,8 +101,8 @@ mod tests {
         let mut hardware = setup_default_test();
         hardware.registers.set(0, 0x3100);
         hardware.memory.load(0x3100, &[
-            'H' as i16, 'e' as i16, 'l' as i16, 'l' as i16, 'o' as i16, ' ' as i16,
-            'W' as i16, 'o' as i16, 'r' as i16, 'l' as i16, 'd' as i16, '!' as i16,
+            'H' as u16, 'e' as u16, 'l' as u16, 'l' as u16, 'o' as u16, ' ' as u16,
+            'W' as u16, 'o' as u16, 'r' as u16, 'l' as u16, 'd' as u16, '!' as u16,
             0x0000,
         ]);
 
@@ -116,7 +116,7 @@ mod tests {
         let mut hardware = setup_test_with_input("Hello World!");
         process(0b0000_0000_0010_0011, &mut hardware);
 
-        assert_eq!(hardware.registers.get(0), 'H' as i16);
+        assert_eq!(hardware.registers.get(0), 'H' as u16);
         assert_eq!(hardware.flags.is_positive(), true);
     }
 
@@ -125,8 +125,8 @@ mod tests {
         let mut hardware = setup_default_test();
         hardware.registers.set(0, 0x3100);
         hardware.memory.load(0x3100, &[
-            'H' as i16, 'e' as i16, 'l' as i16, 'l' as i16, 'o' as i16, ' ' as i16,
-            'W' as i16, 'o' as i16, 'r' as i16, 'l' as i16, 'd' as i16, '!' as i16,
+            'H' as u16, 'e' as u16, 'l' as u16, 'l' as u16, 'o' as u16, ' ' as u16,
+            'W' as u16, 'o' as u16, 'r' as u16, 'l' as u16, 'd' as u16, '!' as u16,
             0x0000,
         ]);
         process(0b0000_0000_0010_0100, &mut hardware);

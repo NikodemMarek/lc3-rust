@@ -1,23 +1,23 @@
-pub fn sign_extend(mut value: u16, bit_count: u8) -> i16 {
+pub fn sign_extend(mut value: u16, bit_count: u8) -> u16 {
     if (value >> (bit_count - 1)) & 1 != 0 {
         value |= 0xFFFF << bit_count;
     }
-    value as i16
+    value
 }
 
-pub fn imm5(value: u16) -> i16 {
-    sign_extend(value & 0b0000_0000_0011_1111, 5) as i16
+pub fn imm5(value: u16) -> u16 {
+    sign_extend(value & 0b0000_0000_0011_1111, 5)
 }
 
-pub fn offset6(value: u16) -> i16 {
-    sign_extend(value & 0b0000_0000_0011_1111, 6) as i16
+pub fn offset6(value: u16) -> u16 {
+    sign_extend(value & 0b0000_0000_0011_1111, 6)
 }
 
-pub fn pcoffset9(value: u16) -> i16 {
-    sign_extend(value & 0b0000_0001_1111_1111, 9) as i16
+pub fn pcoffset9(value: u16) -> u16 {
+    sign_extend(value & 0b0000_0001_1111_1111, 9)
 }
-pub fn pcoffset11(value: u16) -> i16 {
-    sign_extend(value & 0b0000_0111_1111_1111, 11) as i16
+pub fn pcoffset11(value: u16) -> u16 {
+    sign_extend(value & 0b0000_0111_1111_1111, 11)
 }
 
 pub fn register_at(value: u16, at: u16) -> u16 {
@@ -36,25 +36,25 @@ mod tests {
 
     #[test]
     fn test_imm5() {
-        assert_eq!(imm5(0b0000_0000_0000_0001) as u16, 0b0000_0000_0000_0001);
-        assert_eq!(imm5(0b0000_0000_0001_0001) as u16, 0b1111_1111_1111_0001);
+        assert_eq!(imm5(0b0000_0000_0000_0001), 0b0000_0000_0000_0001);
+        assert_eq!(imm5(0b0000_0000_0001_0001), 0b1111_1111_1111_0001);
     }
 
     #[test]
     fn test_offset6() {
-        assert_eq!(offset6(0b0000_0000_0000_0001) as u16, 0b0000_0000_0000_0001);
-        assert_eq!(offset6(0b0000_0000_0010_0001) as u16, 0b1111_1111_1110_0001);
+        assert_eq!(offset6(0b0000_0000_0000_0001), 0b0000_0000_0000_0001);
+        assert_eq!(offset6(0b0000_0000_0010_0001), 0b1111_1111_1110_0001);
     }
 
     #[test]
     fn test_pcoffset9() {
-        assert_eq!(pcoffset9(0b0000_0000_0000_0001) as u16, 0b0000_0000_0000_0001);
-        assert_eq!(pcoffset9(0b0000_0001_0000_0001) as u16, 0b1111_1111_0000_0001);
+        assert_eq!(pcoffset9(0b0000_0000_0000_0001), 0b0000_0000_0000_0001);
+        assert_eq!(pcoffset9(0b0000_0001_0000_0001), 0b1111_1111_0000_0001);
     }
     #[test]
     fn test_pcoffset11() {
-        assert_eq!(pcoffset11(0b0000_0000_0000_0001) as u16, 0b0000_0000_0000_0001);
-        assert_eq!(pcoffset11(0b0000_0100_0000_0001) as u16, 0b1111_1100_0000_0001);
+        assert_eq!(pcoffset11(0b0000_0000_0000_0001), 0b0000_0000_0000_0001);
+        assert_eq!(pcoffset11(0b0000_0100_0000_0001), 0b1111_1100_0000_0001);
     }
 
     #[test]
