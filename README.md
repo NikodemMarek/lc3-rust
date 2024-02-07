@@ -40,7 +40,7 @@ cargo test
 
 2048
 
-```bash
+```
 cargo run -- 2048.obj
 
 Control the game using WASD keys.
@@ -61,7 +61,7 @@ Are you on an ANSI terminal (y/n)? y
 
 rogue
 
-```bash
+```
 cargo run -- rogue.obj
 
 Welcome to LC3 Rogue.
